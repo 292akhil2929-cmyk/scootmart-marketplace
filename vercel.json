@@ -1,8 +1,9 @@
 {
   "framework": "nextjs",
+  "nodeVersion": "18.x",
   "buildCommand": "next build",
   "devCommand": "next dev",
-  "installCommand": "npm install",
+  "installCommand": "npm install --legacy-peer-deps",
   "regions": ["fra1"],
   "env": {
     "NEXT_PUBLIC_APP_URL": "https://scootmart.ae"
