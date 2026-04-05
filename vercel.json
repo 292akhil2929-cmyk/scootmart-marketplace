@@ -1,6 +1,5 @@
 {
   "framework": "nextjs",
-  "nodeVersion": "18.x",
   "buildCommand": "next build",
   "devCommand": "next dev",
   "installCommand": "npm install --legacy-peer-deps",
