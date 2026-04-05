@@ -67,7 +67,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         .update({ status: 'released', released_at: new Date().toISOString(), release_trigger: 'buyer_confirmed' })
         .eq('order_id', id)
       // Update seller stats
-      await supabase.rpc('increment_seller_sales', { seller_id: order.seller_id }).catch(() => {})
+      try { await supabase.rpc('increment_seller_sales', { seller_id: order.seller_id }) } catch (_) {}
       // Notify seller
       await supabase.from('notifications').insert({
         user_id: order.seller_id,

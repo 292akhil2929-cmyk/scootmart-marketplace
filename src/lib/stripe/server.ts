@@ -1,8 +1,22 @@
 import Stripe from 'stripe'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-10-28.acacia',
-  typescript: true,
+// Lazy singleton — only instantiated at runtime, not build time
+let _stripe: Stripe | null = null
+export function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2025-02-24.acacia',
+      typescript: true,
+    })
+  }
+  return _stripe
+}
+
+// Keep backward-compat export used by webhook and orders
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    return (getStripe() as any)[prop]
+  },
 })
 
 export async function createPaymentIntent({
@@ -14,8 +28,8 @@ export async function createPaymentIntent({
   currency?: string
   metadata: Record<string, string>
 }) {
-  return stripe.paymentIntents.create({
-    amount: Math.round(amount * 100), // fils
+  return getStripe().paymentIntents.create({
+    amount: Math.round(amount * 100),
     currency,
     metadata,
     capture_method: 'automatic',
@@ -37,7 +51,7 @@ export async function createCheckoutSession({
   cancelUrl: string
   customerEmail?: string
 }) {
-  return stripe.checkout.sessions.create({
+  return getStripe().checkout.sessions.create({
     payment_method_types: ['card'],
     mode: 'payment',
     customer_email: customerEmail,
