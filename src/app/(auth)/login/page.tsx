@@ -26,9 +26,11 @@ function LoginForm() {
   }
 
   const signInGoogle = async () => {
+    // Always use current origin — never depends on Supabase Site URL setting
+    const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${location.origin}/api/auth/callback?redirect=${redirect}` }
+      options: { redirectTo: `${origin}/api/auth/callback?next=${encodeURIComponent(redirect)}` }
     })
   }
 
