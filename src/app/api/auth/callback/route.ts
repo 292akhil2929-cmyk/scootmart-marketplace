@@ -4,12 +4,19 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const redirect = searchParams.get('redirect') ?? '/'
+  const next = searchParams.get('next') ?? searchParams.get('redirect') ?? '/'
+  const type = searchParams.get('type') ?? ''
 
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error) {
+      if (type === 'recovery') {
+        return NextResponse.redirect(`${origin}/reset-password`)
+      }
+      return NextResponse.redirect(`${origin}${next}`)
+    }
   }
 
-  return NextResponse.redirect(`${origin}${redirect}`)
+  return NextResponse.redirect(`${origin}/login?message=Could+not+verify+email`)
 }

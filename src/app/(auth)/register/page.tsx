@@ -11,23 +11,52 @@ function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const defaultRole = searchParams.get('role') ?? 'buyer'
+  const sent = searchParams.get('sent') === 'true'
+  const sentEmail = searchParams.get('email') ?? ''
   const [role, setRole] = useState<'buyer' | 'seller'>(defaultRole as 'buyer' | 'seller')
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
 
+  if (sent) {
+    return (
+      <div className="bg-background rounded-2xl border p-8 shadow-sm text-center">
+        <div className="text-5xl mb-4">📧</div>
+        <h2 className="text-xl font-bold mb-2">Check your email!</h2>
+        <p className="text-muted-foreground text-sm mb-4">
+          We sent a confirmation link to <strong>{sentEmail}</strong>.<br />
+          Click the link to activate your account.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Didn&apos;t get it? Check spam, or{' '}
+          <Link href="/register" className="text-primary hover:underline">try again</Link>.
+        </p>
+      </div>
+    )
+  }
+
   const signUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true); setError('')
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
     const { data, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
-      options: { data: { full_name: form.name, role } }
+      options: {
+        data: { full_name: form.name, role },
+        emailRedirectTo: `${appUrl}/api/auth/callback?next=${role === 'seller' ? '/seller/dashboard' : '/'}`,
+      }
     })
     if (error) { setError(error.message); setLoading(false); return }
+    // If email confirmation required
+    if (data.user && !data.session) {
+      router.push(`/register?sent=true&email=${encodeURIComponent(form.email)}`)
+      return
+    }
+    // Auto-confirmed (e.g. Supabase email confirmation disabled)
     if (data.user) {
-      await supabase.from('profiles').update({ role, full_name: form.name }).eq('id', data.user.id)
+      await supabase.from('profiles').upsert({ id: data.user.id, role, full_name: form.name })
     }
     router.push(role === 'seller' ? '/seller/dashboard' : '/')
     router.refresh()

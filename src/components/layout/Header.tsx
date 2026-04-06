@@ -14,6 +14,7 @@ const NAV = [
   { label: 'Browse', href: '/browse' },
   { label: 'UAE-Tested', href: '/uae-tested' },
   { label: 'Bundles', href: '/bundles' },
+  { label: 'Sell on ScootMart', href: '/vendor' },
 ]
 
 export function Header() {
