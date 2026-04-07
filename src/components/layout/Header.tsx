@@ -12,9 +12,9 @@ import { cn, getInitials } from '@/lib/utils'
 
 const NAV = [
   { label: 'Browse', href: '/browse' },
+  { label: 'Compare', href: '/compare' },
   { label: 'UAE-Tested', href: '/uae-tested' },
-  { label: 'Bundles', href: '/bundles' },
-  { label: 'Sell on ScootMart', href: '/vendor' },
+  { label: 'Sell', href: '/vendor' },
 ]
 
 export function Header() {
@@ -196,6 +196,8 @@ export function Header() {
                         <>
                           <hr className="my-1" />
                           <Link href="/admin" className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent text-primary font-medium" onClick={() => setMenuOpen(false)}>Admin Panel</Link>
+                          <Link href="/admin/scooters" className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent text-primary" onClick={() => setMenuOpen(false)}>Manage Scooters</Link>
+                          <Link href="/admin/vendors" className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent text-primary" onClick={() => setMenuOpen(false)}>Manage Vendors</Link>
                           <Link href="/admin/users" className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent text-primary" onClick={() => setMenuOpen(false)}>Manage Users</Link>
                           <Link href="/admin/analytics" className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent text-primary" onClick={() => setMenuOpen(false)}>Revenue Analytics</Link>
                           <Link href="/admin/disputes" className="flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent text-primary" onClick={() => setMenuOpen(false)}>Disputes</Link>

@@ -6,6 +6,7 @@ import './globals.css'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { ChatBot } from '@/components/chatbot/ChatBot'
+import { ScrollRevealInit } from '@/components/layout/ScrollRevealInit'
 import { Toaster } from '@/components/ui/toaster'
 import { Providers } from './providers'
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={inter.className}>
         <Providers>
           <Header />
+          <ScrollRevealInit />
           <main>{children}</main>
           <Footer />
           <ChatBot />

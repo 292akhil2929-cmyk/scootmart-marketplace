@@ -1,11 +1,21 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Hero } from '@/components/home/Hero'
-import { HowItWorks } from '@/components/home/HowItWorks'
-import { TrustBadges } from '@/components/home/TrustBadges'
+import { CategorySection } from '@/components/home/CategorySection'
+import { VideoReveal } from '@/components/home/VideoReveal'
+import { SmartSearch } from '@/components/home/SmartSearch'
+import { ComparisonTeaser } from '@/components/home/ComparisonTeaser'
+import { BrandsMarquee } from '@/components/home/BrandsMarquee'
+import { AffiliateProducts } from '@/components/home/AffiliateProducts'
+import { UAESection } from '@/components/home/UAESection'
 import { ListingCard } from '@/components/listings/ListingCard'
-import { Button } from '@/components/ui/button'
 import type { Listing } from '@/types/database'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'ScootMart.ae — UAE\'s #1 Electric Scooter & E-Bike Marketplace',
+  description: 'Find, compare and buy electric scooters and e-bikes in UAE. 500+ models, verified vendors, real specs, direct purchase or seller links.',
+}
 
 async function getFeaturedListings(): Promise<Listing[]> {
   const supabase = await createClient()
@@ -13,111 +23,123 @@ async function getFeaturedListings(): Promise<Listing[]> {
     .from('listings')
     .select('*, seller:profiles(*), specs:listing_specs(*)')
     .eq('status', 'active')
-    .eq('featured', true)
-    .order('created_at', { ascending: false })
+    .order('view_count', { ascending: false })
     .limit(8)
   return (data as Listing[]) ?? []
 }
 
-async function getUAETestedListings(): Promise<Listing[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('listings')
-    .select('*, seller:profiles(*), specs:listing_specs(*)')
-    .eq('status', 'active')
-    .eq('uae_tested', true)
-    .order('view_count', { ascending: false })
-    .limit(4)
-  return (data as Listing[]) ?? []
-}
-
 async function getStats() {
-  const supabase = await createClient()
-  const [{ count: listings }, { count: sellers }] = await Promise.all([
-    supabase.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'seller'),
-  ])
-  return { listings: listings ?? 0, sellers: sellers ?? 0 }
+  try {
+    const supabase = await createClient()
+    const [{ count: listings }, { count: sellers }] = await Promise.all([
+      supabase.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'seller'),
+    ])
+    return { listings: listings ?? 0, sellers: sellers ?? 0 }
+  } catch {
+    return { listings: 0, sellers: 0 }
+  }
 }
 
 export default async function HomePage() {
-  const [featured, uaeTested, stats] = await Promise.all([
+  const [featured, stats] = await Promise.all([
     getFeaturedListings(),
-    getUAETestedListings(),
     getStats(),
   ])
 
   return (
-    <div>
+    <div className="homepage-root">
+      {/* 1. HERO — Apple/BMW full-screen with scroll parallax */}
       <Hero />
 
-      {/* Stats bar */}
-      <div className="bg-primary text-white">
-        <div className="container mx-auto px-4 py-4 flex flex-wrap justify-center gap-8 text-sm font-medium">
-          <span>🛵 {stats.listings}+ Active Listings</span>
-          <span>✓ {stats.sellers}+ Verified Sellers</span>
-          <span>🌡️ UAE-Tested Performance Data</span>
-          <span>🔒 100% Escrow Protected</span>
+      {/* 2. STATS BAR */}
+      <div className="bg-[#1d1d1f] border-y border-white/5">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex flex-wrap justify-center gap-8 text-sm">
+          <span className="text-white/50">⚡ <span className="text-white font-semibold">{stats.listings > 0 ? `${stats.listings}+` : '500+'}</span> Active Listings</span>
+          <span className="text-white/50">✓ <span className="text-white font-semibold">{stats.sellers > 0 ? `${stats.sellers}+` : '50+'}</span> Verified Vendors</span>
+          <span className="text-white/50">🌡️ <span className="text-white font-semibold">UAE-Tested</span> Performance Data</span>
+          <span className="text-white/50">🔒 <span className="text-white font-semibold">100%</span> Escrow Protected</span>
         </div>
       </div>
 
-      {/* UAE-Tested section */}
-      {uaeTested.length > 0 && (
-        <section className="py-16">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-8">
+      {/* 3. CATEGORY CARDS — Apple product lineup style */}
+      <CategorySection />
+
+      {/* 4. BMW SCROLL VIDEO REVEAL */}
+      <VideoReveal />
+
+      {/* 5. SMART SEARCH — Skyscanner-inspired */}
+      <SmartSearch />
+
+      {/* 6. FEATURED LISTINGS */}
+      {featured.length > 0 && (
+        <section className="bg-white py-24 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-end justify-between mb-12">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 text-orange-700 px-3 py-1 text-xs font-semibold mb-2 dark:bg-orange-900 dark:text-orange-200">
-                  🌡️ UAE-Tested
-                </div>
-                <h2 className="text-2xl font-bold">Tested in UAE Conditions</h2>
-                <p className="text-muted-foreground mt-1">Real-world performance data at 40°C+ Dubai heat</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 mb-2">Live Listings</p>
+                <h2 className="text-[clamp(2rem,4vw,3rem)] font-black text-[#1d1d1f] leading-tight tracking-[-0.02em]">
+                  Top Picks Right Now
+                </h2>
               </div>
-              <Link href="/uae-tested"><Button variant="outline">See all UAE-Tested</Button></Link>
+              <Link
+                href="/browse"
+                className="text-sm font-semibold text-[#0071e3] hover:underline hidden md:block"
+              >
+                View all listings →
+              </Link>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {uaeTested.map(listing => <ListingCard key={listing.id} listing={listing} />)}
+              {featured.map(listing => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+            <div className="text-center mt-10 md:hidden">
+              <Link href="/browse" className="text-sm font-semibold text-[#0071e3] hover:underline">
+                View all listings →
+              </Link>
             </div>
           </div>
         </section>
       )}
 
-      <TrustBadges />
+      {/* 7. COMPARISON TEASER — Dark section */}
+      <ComparisonTeaser />
 
-      {/* Featured listings */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-bold">Featured Listings</h2>
-              <p className="text-muted-foreground mt-1">Top-rated scooters and e-bikes in the UAE</p>
-            </div>
-            <Link href="/browse"><Button variant="outline">Browse all</Button></Link>
-          </div>
+      {/* 8. BRANDS MARQUEE */}
+      <BrandsMarquee />
 
-          {featured.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {featured.map(listing => <ListingCard key={listing.id} listing={listing} />)}
-            </div>
-          ) : (
-            <div className="text-center py-16 text-muted-foreground">
-              <p className="text-lg">No listings yet — be the first to list!</p>
-              <Link href="/register?role=seller"><Button className="mt-4">Start Selling</Button></Link>
-            </div>
-          )}
-        </div>
-      </section>
+      {/* 9. AMAZON AFFILIATE PRODUCTS */}
+      <AffiliateProducts />
 
-      <HowItWorks />
+      {/* 10. UAE-SPECIFIC TRUST SECTION */}
+      <UAESection />
 
-      {/* CTA */}
-      <section className="py-20 bg-gradient-to-r from-primary to-emerald-600 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">Have a Scooter or E-Bike to Sell?</h2>
-          <p className="text-white/80 mb-8 max-w-xl mx-auto">List in minutes. Access thousands of serious UAE buyers. 8–12% commission only on successful sales. Full escrow protection for both parties.</p>
+      {/* 11. SELL CTA — Apple-style dark banner */}
+      <section className="bg-[#1d1d1f] py-28 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <p className="text-xs font-semibold uppercase tracking-widest text-emerald-500 mb-4">For Vendors & Sellers</p>
+          <h2 className="text-[clamp(2.5rem,6vw,5rem)] font-black text-white leading-tight tracking-[-0.03em] mb-6">
+            Sell Your Scooter.
+            <br />
+            <span className="text-white/30">Reach UAE Buyers.</span>
+          </h2>
+          <p className="text-white/40 text-lg mb-10 max-w-lg mx-auto">
+            List in minutes. Zero upfront cost. Only pay a small commission on successful sales.
+          </p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Link href="/register?role=seller"><Button size="xl" className="bg-white text-primary hover:bg-white/90">Start Selling</Button></Link>
-            <Link href="/browse"><Button size="xl" variant="outline" className="border-white text-white hover:bg-white/10">Browse Listings</Button></Link>
+            <Link
+              href="/register?role=seller"
+              className="bg-white text-[#1d1d1f] font-bold px-10 py-4 rounded-2xl hover:bg-white/90 transition-all hover:scale-[1.02] shadow-xl text-base"
+            >
+              Start Selling Free
+            </Link>
+            <Link
+              href="/vendor"
+              className="border border-white/20 text-white font-semibold px-10 py-4 rounded-2xl hover:bg-white/5 transition-all text-base"
+            >
+              Learn More
+            </Link>
           </div>
         </div>
       </section>
