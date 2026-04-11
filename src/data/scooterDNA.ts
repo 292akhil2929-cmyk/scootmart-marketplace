@@ -96,7 +96,7 @@ export const SCOOTER_DNA: Record<number, ScooterDNA> = {
     bgTexture: 'lightning-storm',
     bgAnimated: true,
     particleStyle: 'lightning-bolts',
-    particleCount: 40,
+    particleCount: 0,
     particleSpeed: 'storm',
     soundTheme: 'thunder',
     soundIntensity: 'aggressive',

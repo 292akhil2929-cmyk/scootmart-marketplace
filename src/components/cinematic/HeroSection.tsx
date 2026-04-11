@@ -141,12 +141,16 @@ export function HeroSection() {
           </motion.span>
         </div>
 
-        {/* Center: scooter glyph */}
+        {/* Center: scooter glyph — hidden until lightning finishes */}
         <div className="flex-1 flex items-center justify-center px-4">
           <motion.div
-            initial={{ scale: 0.3, opacity: 0 }}
-            animate={{ scale: [0.3, 1.08, 1], opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.6, times: [0, 0.7, 1], ease: [0.34, 1.56, 0.64, 1] }}
+            initial={{ scale: 0.4, opacity: 0, filter: 'brightness(3)' }}
+            animate={
+              entranceDone
+                ? { scale: [0.4, 1.08, 1], opacity: 1, filter: ['brightness(3)', 'brightness(1.4)', 'brightness(1)'] }
+                : { scale: 0.4, opacity: 0, filter: 'brightness(3)' }
+            }
+            transition={{ duration: 0.75, times: [0, 0.55, 1], ease: [0.22, 1.4, 0.36, 1] }}
           >
             <motion.div
               animate={{ y: entranceDone ? [0, -6, 0] : 0 }}
@@ -178,8 +182,8 @@ export function HeroSection() {
                 <motion.span
                   key={i}
                   initial={{ y: -120, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.7 + i * 0.025, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+                  animate={entranceDone ? { y: 0, opacity: 1 } : { y: -120, opacity: 0 }}
+                  transition={{ delay: 0.05 + i * 0.025, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
                   className="inline-block font-barlow font-900 text-[clamp(3rem,7vw,6rem)] leading-[0.85] tracking-tight text-white"
                 >
                   {ch === ' ' ? '\u00A0' : ch}

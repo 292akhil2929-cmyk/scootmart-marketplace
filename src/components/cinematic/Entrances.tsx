@@ -7,7 +7,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import type { EntranceKind } from '@/data/scooterDNA'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface Props {
   kind: EntranceKind
@@ -18,80 +18,235 @@ interface Props {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // LIGHTNING STRIKE (Dualtron — SPEED)
+// Thor-level multi-bolt fractal strike with screen shake
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function LightningStrike({ primary, onComplete }: { primary: string; onComplete?: () => void }) {
-  const [phase, setPhase] = useState<'bolt' | 'flash' | 'shockwave' | 'done'>('bolt')
+type Seg = [number, number, number, number, number] // x1,y1,x2,y2,width
+interface Bolt { segs: Seg[]; age: number; maxAge: number; intensity: number }
 
+function LightningStrike({ primary, secondary, onComplete }: { primary: string; secondary: string; onComplete?: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const boltsRef = useRef<Bolt[]>([])
+  const [phase, setPhase] = useState<'build' | 'strike' | 'flash' | 'after' | 'done'>('build')
+  const [flashOp, setFlashOp] = useState(0)
+  const [shakeTrigger, setShakeTrigger] = useState(0)
+
+  // ── Fractal bolt generator (L-system-ish midpoint displacement) ──
+  const genBolt = (x1: number, y1: number, x2: number, y2: number, disp: number, detail: number, width: number, out: Seg[] = [], branch = true): Seg[] => {
+    if (detail <= 0) {
+      out.push([x1, y1, x2, y2, width])
+      return out
+    }
+    const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * disp
+    const my = (y1 + y2) / 2 + (Math.random() - 0.5) * disp * 0.25
+    genBolt(x1, y1, mx, my, disp / 2, detail - 1, width, out, branch)
+    genBolt(mx, my, x2, y2, disp / 2, detail - 1, width, out, branch)
+    // Random branches
+    if (branch && detail > 2 && Math.random() < 0.32) {
+      const ang = Math.atan2(y2 - my, x2 - mx) + (Math.random() - 0.5) * 1.4
+      const len = Math.hypot(x2 - mx, y2 - my) * (0.3 + Math.random() * 0.5)
+      const bx = mx + Math.cos(ang) * len
+      const by = my + Math.sin(ang) * len
+      genBolt(mx, my, bx, by, disp / 2.5, detail - 2, width * 0.55, out, false)
+    }
+    return out
+  }
+
+  // ── Canvas render loop ──
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase('flash'), 300)
-    const t2 = setTimeout(() => setPhase('shockwave'), 400)
-    const t3 = setTimeout(() => { setPhase('done'); onComplete?.() }, 1200)
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const dpr = window.devicePixelRatio || 1
+    const resize = () => {
+      canvas.width = canvas.offsetWidth * dpr
+      canvas.height = canvas.offsetHeight * dpr
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.scale(dpr, dpr)
+    }
+    resize()
+    window.addEventListener('resize', resize)
+
+    const W = () => canvas.offsetWidth
+    const H = () => canvas.offsetHeight
+
+    let raf = 0
+    const render = () => {
+      ctx.clearRect(0, 0, W(), H())
+
+      // Draw each bolt with 3 passes: wide halo → mid glow → white core
+      const survivors: Bolt[] = []
+      for (const b of boltsRef.current) {
+        const fade = Math.max(0, 1 - b.age / b.maxAge)
+        if (fade <= 0) continue
+        const ease = Math.pow(fade, 1.4)
+        ctx.globalCompositeOperation = 'lighter'
+
+        // Halo
+        ctx.shadowColor = primary
+        ctx.shadowBlur = 40
+        ctx.strokeStyle = `rgba(255, 180, 60, ${ease * 0.35 * b.intensity})`
+        ctx.lineCap = 'round'
+        for (const [x1, y1, x2, y2, w] of b.segs) {
+          ctx.lineWidth = w * 6
+          ctx.beginPath()
+          ctx.moveTo(x1, y1)
+          ctx.lineTo(x2, y2)
+          ctx.stroke()
+        }
+
+        // Mid plasma
+        ctx.shadowColor = secondary
+        ctx.shadowBlur = 22
+        ctx.strokeStyle = `rgba(255, 230, 140, ${ease * 0.8 * b.intensity})`
+        for (const [x1, y1, x2, y2, w] of b.segs) {
+          ctx.lineWidth = w * 2.2
+          ctx.beginPath()
+          ctx.moveTo(x1, y1)
+          ctx.lineTo(x2, y2)
+          ctx.stroke()
+        }
+
+        // White-hot core
+        ctx.shadowBlur = 8
+        ctx.strokeStyle = `rgba(255, 255, 255, ${ease * b.intensity})`
+        for (const [x1, y1, x2, y2, w] of b.segs) {
+          ctx.lineWidth = Math.max(0.8, w * 0.9)
+          ctx.beginPath()
+          ctx.moveTo(x1, y1)
+          ctx.lineTo(x2, y2)
+          ctx.stroke()
+        }
+
+        b.age++
+        survivors.push(b)
+      }
+      ctx.shadowBlur = 0
+      ctx.globalCompositeOperation = 'source-over'
+      boltsRef.current = survivors
+      raf = requestAnimationFrame(render)
+    }
+    raf = requestAnimationFrame(render)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', resize)
+    }
+  }, [primary, secondary])
+
+  // ── Phase timeline ──
+  useEffect(() => {
+    const canvas = canvasRef.current
+
+    const spawn = (intensity: number, width: number) => {
+      if (!canvas) return
+      const W = canvas.offsetWidth
+      const H = canvas.offsetHeight
+      const startX = W * (0.15 + Math.random() * 0.7)
+      const endX = W * (0.25 + Math.random() * 0.5)
+      const segs = genBolt(startX, -40, endX, H + 40, Math.min(220, W * 0.18), 8, width)
+      boltsRef.current.push({ segs, age: 0, maxAge: 28, intensity })
+    }
+
+    // Phase 0 (0 → 450ms): dark buildup
+    // Phase 1 (450ms): first precursor bolt
+    const t1 = setTimeout(() => {
+      setPhase('strike')
+      spawn(0.55, 2.5)
+    }, 450)
+    // Phase 2 (620ms): MAIN strike — triple bolt cluster + white flash + shake
+    const t2 = setTimeout(() => {
+      setPhase('flash')
+      spawn(1.0, 5)
+      setTimeout(() => spawn(0.9, 4), 35)
+      setTimeout(() => spawn(0.85, 3.5), 75)
+      setFlashOp(1)
+      setShakeTrigger((n) => n + 1)
+    }, 620)
+    // Flash decay
+    const t3 = setTimeout(() => setFlashOp(0.35), 750)
+    const t4 = setTimeout(() => setFlashOp(0), 900)
+    // Phase 3 (1000ms): afterglow with faint residual bolt
+    const t5 = setTimeout(() => {
+      setPhase('after')
+      spawn(0.35, 1.8)
+    }, 1000)
+    // Phase 4: done — reveal hero
+    const t6 = setTimeout(() => { setPhase('done'); onComplete?.() }, 1550)
+
+    return () => { [t1, t2, t3, t4, t5, t6].forEach(clearTimeout) }
+
   }, [onComplete])
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-30">
-      {/* Bolt */}
-      <AnimatePresence>
-        {phase === 'bolt' && (
-          <motion.svg
-            className="absolute inset-0 w-full h-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 1, 0] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, times: [0, 0.1, 0.7, 1] }}
-            viewBox="0 0 1920 1080"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <filter id="bolt-glow">
-                <feGaussianBlur stdDeviation="12" />
-                <feMerge>
-                  <feMergeNode />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-            <motion.path
-              d="M -100 -100 L 400 300 L 350 500 L 900 700 L 850 900 L 1920 1180"
-              stroke="#ffffff"
-              strokeWidth="4"
-              fill="none"
-              filter="url(#bolt-glow)"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 0.08 }}
-            />
-          </motion.svg>
-        )}
-      </AnimatePresence>
+    <motion.div
+      className="absolute inset-0 pointer-events-none overflow-hidden z-40"
+      animate={shakeTrigger > 0 ? { x: [0, -14, 16, -10, 8, -5, 0], y: [0, 6, -10, 8, -4, 3, 0] } : {}}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      key={`shake-${shakeTrigger}`}
+    >
+      {/* Dark storm vignette during buildup */}
+      <motion.div
+        className="absolute inset-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: phase === 'done' ? 0 : phase === 'build' || phase === 'strike' ? 0.82 : 0.3 }}
+        transition={{ duration: 0.4 }}
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 30%, rgba(6,8,20,0.55) 0%, rgba(0,0,5,0.96) 75%)',
+        }}
+      />
 
-      {/* White flash */}
+      {/* Pre-flicker charged static */}
+      <motion.div
+        className="absolute inset-0"
+        initial={{ opacity: 0 }}
+        animate={{
+          opacity: phase === 'build' ? [0, 0.15, 0, 0.25, 0, 0.1, 0] : 0,
+        }}
+        transition={{ duration: 0.45, times: [0, 0.15, 0.3, 0.5, 0.65, 0.8, 1] }}
+        style={{ background: `radial-gradient(ellipse at center top, ${primary}40, transparent 60%)` }}
+      />
+
+      {/* Canvas — the actual fractal lightning */}
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+
+      {/* Blinding white flash */}
+      <motion.div
+        className="absolute inset-0 bg-white"
+        animate={{ opacity: flashOp }}
+        transition={{ duration: 0.08 }}
+      />
+
+      {/* Colored afterglow tint */}
+      <motion.div
+        className="absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse at 50% 40%, ${primary}55 0%, ${primary}15 40%, transparent 75%)`,
+        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: phase === 'after' ? 1 : phase === 'flash' ? 0.6 : 0 }}
+        transition={{ duration: 0.4 }}
+      />
+
+      {/* Ground-up shockwave ring (subtle, anchors the strike) */}
       <AnimatePresence>
         {phase === 'flash' && (
           <motion.div
-            className="absolute inset-0 bg-white"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 1, 0] }}
+            className="absolute left-1/2 top-[58%] rounded-full"
+            style={{
+              border: `2px solid ${secondary}`,
+              boxShadow: `0 0 80px ${primary}, inset 0 0 40px ${primary}80`,
+            }}
+            initial={{ width: 10, height: 10, x: '-50%', y: '-50%', opacity: 1 }}
+            animate={{ width: 2400, height: 2400, opacity: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.23, times: [0, 0.13, 0.48, 1] }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           />
         )}
       </AnimatePresence>
-
-      {/* Shockwave */}
-      <AnimatePresence>
-        {phase === 'shockwave' && (
-          <motion.div
-            className="absolute left-1/2 top-1/2 rounded-full"
-            style={{ border: `3px solid ${primary}`, boxShadow: `0 0 60px ${primary}` }}
-            initial={{ width: 20, height: 20, x: '-50%', y: '-50%', opacity: 1 }}
-            animate={{ width: 2000, height: 2000, opacity: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-          />
-        )}
-      </AnimatePresence>
-    </div>
+    </motion.div>
   )
 }
 
@@ -262,7 +417,7 @@ function RainCurtain({ primary, secondary, onComplete }: { primary: string; seco
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function Entrance({ kind, primary, secondary, onComplete }: Props) {
   switch (kind) {
-    case 'lightning-strike': return <LightningStrike primary={primary} onComplete={onComplete} />
+    case 'lightning-strike': return <LightningStrike primary={primary} secondary={secondary} onComplete={onComplete} />
     case 'earth-crack': return <EarthCrack primary={primary} onComplete={onComplete} />
     case 'gold-unfurl': return <GoldUnfurl primary={primary} onComplete={onComplete} />
     case 'circuit-assemble': return <CircuitAssemble primary={primary} onComplete={onComplete} />
