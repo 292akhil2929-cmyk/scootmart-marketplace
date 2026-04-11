@@ -10,10 +10,10 @@ import { motion } from 'framer-motion'
 import { FEATURED_HERO_ID, loadHeroConfig, type HeroConfig } from '@/data/featuredHero'
 import { getDNA } from '@/data/scooterDNA'
 import { SCOOTERS, getAmazonUrl } from '@/data/scooters'
-import { scooterFrames } from '@/data/scooterFrames'
 import { BgTexture } from './BgTexture'
 import { DNAParticleField } from './DNAParticleField'
 import { Entrance } from './Entrances'
+import { HeroScooterArt } from './HeroScooterArt'
 import { useCinematicStore } from '@/store/cinematicStore'
 import { ArrowDown } from 'lucide-react'
 
@@ -33,21 +33,6 @@ function CountUp({ to, suffix = '', duration = 600, start }: { to: number; suffi
     return () => cancelAnimationFrame(raf)
   }, [to, duration, start])
   return <span className="tabular-nums">{n.toLocaleString()}{suffix}</span>
-}
-
-function ScooterGlyph({ color, glow }: { color: string; glow: string }) {
-  // Use the 3/4 frame (index 9) for the hero
-  const svg = scooterFrames[9] ?? scooterFrames[0]
-  return (
-    <div
-      className="relative"
-      style={{
-        width: 'min(760px, 80vw)',
-        filter: `drop-shadow(0 0 80px ${glow}80) drop-shadow(0 40px 60px rgba(0,0,0,0.6))`,
-      }}
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
-  )
 }
 
 export function HeroSection() {
@@ -167,7 +152,11 @@ export function HeroSection() {
               animate={{ y: entranceDone ? [0, -6, 0] : 0 }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <ScooterGlyph color={dna.primaryColor} glow={dna.glowColor} />
+              <HeroScooterArt
+                primary={dna.primaryColor}
+                secondary={dna.secondaryColor}
+                glow={dna.glowColor}
+              />
             </motion.div>
           </motion.div>
         </div>
