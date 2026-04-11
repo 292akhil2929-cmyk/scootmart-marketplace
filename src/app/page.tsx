@@ -1,40 +1,26 @@
 import type { Metadata } from 'next'
-import { Cursor } from '@/components/cinematic/Cursor'
-import { Navbar } from '@/components/cinematic/Navbar'
-import { HeroSection } from '@/components/cinematic/HeroSection'
-import { CinematicSequence } from '@/components/cinematic/CinematicSequence'
-import { Storefront } from '@/components/storefront/Storefront'
-import { AudioEngine } from '@/components/cinematic/AudioEngine'
-import { ModelCinematicMount } from '@/components/cinematic/ModelCinematic'
-import { ZoneObserver } from '@/components/cinematic/ZoneObserver'
+import { MinimalNav } from '@/components/shop/MinimalNav'
+import { HeroEcom } from '@/components/shop/HeroEcom'
+import { FeatureStrip } from '@/components/shop/FeatureStrip'
+import { ProductGrid } from '@/components/shop/ProductGrid'
+import { NewsletterBand } from '@/components/shop/NewsletterBand'
+import { SiteFooter } from '@/components/shop/SiteFooter'
 
 export const metadata: Metadata = {
-  title: "ScootSphere — UAE's #1 Electric Scooter Marketplace",
+  title: 'Scootmart — Electric Scooters & E-Bikes for the UAE',
   description:
-    'Find, compare and buy electric scooters and e-bikes in UAE. 500+ models, verified vendors, real specs, cinematic experience.',
+    'Shop verified electric scooters and e-bikes in the UAE. Real specs, transparent pricing, free delivery, 2-year warranty.',
 }
 
 export default function Page() {
   return (
-    <div className="cinematic-root">
-      <Cursor />
-      <Navbar />
-      <AudioEngine />
-      <ZoneObserver />
-
-      {/* ZONE 0 — Flagship hero ad */}
-      <HeroSection />
-
-      {/* ZONE 1 — 700vh cinematic scroll (anchor for hero "Learn More") */}
-      <div id="cinematic">
-        <CinematicSequence />
-      </div>
-
-      {/* ZONE 2 — Full storefront */}
-      <Storefront />
-
-      {/* Per-model cinematic — portal over everything */}
-      <ModelCinematicMount />
-    </div>
+    <main className="shop-root bg-white text-neutral-900 antialiased">
+      <MinimalNav />
+      <HeroEcom />
+      <FeatureStrip />
+      <ProductGrid />
+      <NewsletterBand />
+      <SiteFooter />
+    </main>
   )
 }

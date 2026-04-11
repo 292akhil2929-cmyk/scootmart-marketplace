@@ -200,10 +200,32 @@ section {
 .font-700 { font-weight: 700; }
 .font-900 { font-weight: 900; }
 
-/* Cinematic body reset for homepage */
-body:has(.cinematic-root) {
-  background: var(--dark);
+/* Clean e-commerce shop root */
+html {
+  scroll-behavior: smooth;
+}
+body:has(.shop-root) {
+  background: #ffffff;
+  color: #0a0a0a;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scroll reveal utility — used by shop components */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  html { scroll-behavior: auto; }
 }
 
 /* Film grain overlay */

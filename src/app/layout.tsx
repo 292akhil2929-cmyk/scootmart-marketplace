@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} film-grain`}>
+      <body className={inter.className}>
         <Providers>
           <ScrollRevealInit />
           {children}
