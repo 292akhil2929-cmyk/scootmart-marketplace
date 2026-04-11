@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;600;700;900&family=DM+Sans:wght@300;400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -177,4 +179,74 @@
 /* Smooth section transitions */
 section {
   scroll-margin-top: 80px;
+}
+
+/* ============================================================
+   CINEMATIC DESIGN TOKENS
+   ============================================================ */
+
+:root {
+  --e:    #2f5cff;
+  --ink:  #111315;
+  --bg:   #f6f4ef;
+  --cyan: #00f0ff;
+  --dark: #0a0a0f;
+}
+
+/* Barlow Condensed weight shorthands */
+.font-300 { font-weight: 300; }
+.font-500 { font-weight: 500; }
+.font-600 { font-weight: 600; }
+.font-700 { font-weight: 700; }
+.font-900 { font-weight: 900; }
+
+/* Cinematic body reset for homepage */
+body:has(.cinematic-root) {
+  background: var(--dark);
+  overflow-x: hidden;
+}
+
+/* Film grain overlay */
+.film-grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9000;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  animation: grainShift 0.5s steps(1) infinite;
+}
+
+@keyframes grainShift {
+  0%   { background-position: 0 0; }
+  25%  { background-position: -64px 32px; }
+  50%  { background-position: 32px -64px; }
+  75%  { background-position: -32px -32px; }
+  100% { background-position: 0 0; }
+}
+
+/* Scroll indicator line */
+@keyframes scrollLine {
+  from { transform: scaleY(0); transform-origin: top; }
+  to   { transform: scaleY(1); transform-origin: top; }
+}
+
+/* Phase transition flash */
+@keyframes phaseFlash {
+  0%   { opacity: 0.15; }
+  100% { opacity: 0; }
+}
+
+/* Spec counter number roll */
+@keyframes numRoll {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Storefront section */
+#storefront {
+  scroll-margin-top: 0;
 }

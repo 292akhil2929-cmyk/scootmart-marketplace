@@ -3,9 +3,6 @@ export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
-import { ChatBot } from '@/components/chatbot/ChatBot'
 import { ScrollRevealInit } from '@/components/layout/ScrollRevealInit'
 import { Toaster } from '@/components/ui/toaster'
 import { Providers } from './providers'
@@ -31,13 +28,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} film-grain`}>
         <Providers>
-          <Header />
           <ScrollRevealInit />
-          <main>{children}</main>
-          <Footer />
-          <ChatBot />
+          {children}
           <Toaster />
         </Providers>
       </body>

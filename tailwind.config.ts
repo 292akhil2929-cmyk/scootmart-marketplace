@@ -86,6 +86,8 @@ const config: Config = {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         arabic: ["Noto Sans Arabic", "sans-serif"],
+        barlow: ["Barlow Condensed", "sans-serif"],
+        dm: ["DM Sans", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
