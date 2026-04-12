@@ -2,6 +2,7 @@
 // Clean product grid with category filter + search. Minimal cards.
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { Search, Star, ArrowRight, Battery, Gauge, Zap } from 'lucide-react'
 import { SCOOTERS, getAmazonUrl, type Scooter } from '@/data/scooters'
 import { HeroScooterArt } from '@/components/cinematic/HeroScooterArt'
@@ -26,8 +27,9 @@ const ACCENTS: Record<number, string> = {
 
 function ProductCard({ s }: { s: Scooter }) {
   const accent = ACCENTS[s.id] ?? '#3b82f6'
+  const slug = `${s.brand.toLowerCase()}-${s.model.toLowerCase().replace(/\s+/g, '-')}`
   return (
-    <article className="group relative bg-white rounded-2xl border border-neutral-100 overflow-hidden transition-all duration-300 hover:border-neutral-300 hover:shadow-[0_20px_60px_-20px_rgba(15,23,42,0.18)] hover:-translate-y-1">
+    <Link href={`/scooters/${slug}`} className="group relative block bg-white rounded-2xl border border-neutral-100 overflow-hidden transition-all duration-300 hover:border-neutral-300 hover:shadow-[0_20px_60px_-20px_rgba(15,23,42,0.18)] hover:-translate-y-1">
       {/* Badge */}
       {s.badge && (
         <span
@@ -105,18 +107,13 @@ function ProductCard({ s }: { s: Scooter }) {
               )}
             </div>
           </div>
-          <a
-            href={s.amazonAsin ? getAmazonUrl(s.amazonAsin) : '#shop'}
-            target={s.amazonAsin ? '_blank' : undefined}
-            rel={s.amazonAsin ? 'noopener noreferrer' : undefined}
-            className="group/btn inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 transition-colors"
-          >
+          <div className="group/btn inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-neutral-900 text-white text-xs font-medium">
             View
-            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-0.5" />
-          </a>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
         </div>
       </div>
-    </article>
+    </Link>
   )
 }
 

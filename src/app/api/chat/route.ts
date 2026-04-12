@@ -1,116 +1,47 @@
-import { streamText, tool } from 'ai'
-import { openai } from '@ai-sdk/openai'
-import { z } from 'zod'
+// Gemini-powered ScootBot — GEMINI_API_KEY is server-side only, never exposed to client
+import { streamText } from 'ai'
+import { geminiFlash, SYSTEM_PROMPT } from '@/lib/gemini'
+import { NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-const SYSTEM_PROMPT = `You are Scoot — ScootMart.ae's friendly AI assistant for the UAE's #1 electric scooter & e-bike marketplace.
-
-PERSONALITY:
-- Warm, casual, and conversational like a knowledgeable friend — not a robot
-- Use light emojis naturally (don't overdo it)
-- Keep replies concise unless the user wants detail
-- ALWAYS respond naturally to greetings, small talk, and casual messages first — THEN guide toward scooters if relevant
-
-HANDLING CASUAL MESSAGES:
-- "Hi", "Hello", "Hey", "Yo", "Sup" → Greet warmly, introduce yourself briefly, ask what brings them in
-- "Ya", "Ok", "Sure", "Cool", "Thanks" → Acknowledge naturally, keep the conversation going
-- "How are you?", "What's up?" → Respond in kind, keep it short, pivot gently to how you can help
-- Never ignore a greeting or jump straight into scooter facts unprompted
-- If someone just says thanks or goodbye, respond warmly — don't force more recommendations
-
-UAE EXPERTISE (use when actually relevant):
-- Battery range drops 25–35% in Dubai/Abu Dhabi 40°C+ heat — always quote real UAE range
-- IP55+ rating preferred for sand & occasional rain
-- RTA permit needed for public roads in Dubai (max 25 km/h, no highways)
-- Delivery riders need 60 km+ real range, IP65, cargo racks
-- Foldable models preferred for apartment living
-- Ask about: commute distance, rider weight, emirate, budget, use case (commute/leisure/delivery)
-
-WHEN RECOMMENDING:
-1. Cite real UAE heat range, not manufacturer claims
-2. Explain WHY it fits their specific situation
-3. Mention certified used if budget is tight
-4. Suggest bundles (helmet, lock, charger)
-5. Flag RTA permit requirements when relevant
-6. Use the search_listings tool to pull real live inventory — don't make up products
-
-RESPONSE STYLE:
-- Short messages for short inputs ("hi" → short warm reply)
-- Detailed responses only when user asks for comparisons or specs
-- Use bullet points only when listing multiple things
-- Never be pushy or salesy`
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-async function supabaseQuery(table: string, params: Record<string, string>) {
-  const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`)
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
-  const res = await fetch(url.toString(), {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      Accept: 'application/json',
-    },
-  })
-  return res.json()
-}
-
-const chatTools = {
-  search_listings: tool({
-    description: 'Search ScootMart live listings matching buyer criteria',
-    parameters: z.object({
-      budget_max: z.number().optional().describe('Max budget in AED'),
-      type: z.enum(['scooter', 'ebike']).optional(),
-      certified_used: z.boolean().optional(),
-      rta_compliant: z.boolean().optional(),
-      location_emirate: z.string().optional(),
-    }),
-    execute: async (params) => {
-      const qp: Record<string, string> = {
-        select: 'id,title,brand,price,condition,location_emirate,images,slug,uae_tested,certified_used,rta_compliant',
-        status: 'eq.active',
-        limit: '5',
-        order: 'view_count.desc',
-      }
-      if (params.budget_max) qp['price'] = `lte.${params.budget_max}`
-      if (params.type) qp['type'] = `eq.${params.type}`
-      if (params.certified_used) qp['certified_used'] = `eq.true`
-      if (params.rta_compliant) qp['rta_compliant'] = `eq.true`
-      if (params.location_emirate) qp['location_emirate'] = `eq.${params.location_emirate}`
-      return supabaseQuery('listings', qp)
-    },
-  }),
-
-  get_listing_detail: tool({
-    description: 'Get full specs for a specific listing by its ID',
-    parameters: z.object({ listing_id: z.string() }),
-    execute: async ({ listing_id }) => {
-      const url = new URL(`${SUPABASE_URL}/rest/v1/listings`)
-      url.searchParams.set('id', `eq.${listing_id}`)
-      url.searchParams.set('select', '*,specs:listing_specs(*)')
-      url.searchParams.set('limit', '1')
-      const res = await fetch(url.toString(), {
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Accept: 'application/json' },
-      })
-      const data = await res.json()
-      return data[0] ?? null
-    },
-  }),
+// Simple in-memory rate limiter: 10 req / min per IP
+const rateLimitMap = new Map<string, { count: number; reset: number }>()
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+  if (!entry || now > entry.reset) {
+    rateLimitMap.set(ip, { count: 1, reset: now + 60_000 })
+    return false
+  }
+  if (entry.count >= 10) return true
+  entry.count++
+  return false
 }
 
 export async function POST(req: Request) {
-  const { messages } = await req.json()
-
-  const result = streamText({
-    model: openai('gpt-4o-mini'),
-    system: SYSTEM_PROMPT,
-    messages,
-    tools: chatTools,
-    maxSteps: 5,
-  })
-
-  return result.toDataStreamResponse()
+  try {
+    const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'unknown'
+    if (isRateLimited(ip)) {
+      return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 })
+    }
+    const { messages } = await req.json()
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return NextResponse.json({ error: 'Invalid messages' }, { status: 400 })
+    }
+    const result = streamText({
+      model: geminiFlash,
+      system: SYSTEM_PROMPT,
+      messages,
+      maxTokens: 512,
+    })
+    return result.toDataStreamResponse()
+  } catch (err) {
+    console.error('[Chat API]', err)
+    return NextResponse.json(
+      { error: 'ScootBot is having a moment. Try again shortly or email hello@scootmart.ae' },
+      { status: 500 }
+    )
+  }
 }

@@ -75,6 +75,48 @@ export async function sendListingApprovedEmail(to: string, listingTitle: string,
   })
 }
 
+// ── Inquiry emails (for /api/inquiries) ──────────────────────────────────────
+
+export async function sendInquiryToVendor(
+  to: string,
+  data: { productName: string; customerName: string; customerEmail: string; customerPhone: string; message: string }
+) {
+  await sendEmail({
+    to,
+    subject: `New inquiry: ${data.productName}`,
+    html: `
+      <h2>New customer inquiry 📨</h2>
+      <p>Someone is interested in <strong>${data.productName}</strong>.</p>
+      <table style="border-collapse:collapse;width:100%;max-width:480px">
+        <tr><td style="padding:6px 0;color:#666;width:120px">Name</td><td style="padding:6px 0;font-weight:600">${data.customerName}</td></tr>
+        <tr><td style="padding:6px 0;color:#666">Email</td><td style="padding:6px 0"><a href="mailto:${data.customerEmail}">${data.customerEmail}</a></td></tr>
+        <tr><td style="padding:6px 0;color:#666">Phone</td><td style="padding:6px 0"><a href="tel:${data.customerPhone}">${data.customerPhone}</a></td></tr>
+        <tr><td style="padding:6px 0;color:#666;vertical-align:top">Message</td><td style="padding:6px 0">${data.message}</td></tr>
+      </table>
+      <p style="margin-top:20px"><strong>Please respond within 24 hours.</strong></p>
+      <hr/>
+      <p style="color:#666;font-size:12px;">ScootMart.ae – UAE's #1 Electric Scooter Marketplace</p>
+    `,
+  })
+}
+
+export async function sendInquiryConfirmationToCustomer(to: string, data: { productName: string; customerName: string }) {
+  await sendEmail({
+    to,
+    subject: `We received your inquiry — ${data.productName}`,
+    html: `
+      <h2>Inquiry received! ✅</h2>
+      <p>Hi ${data.customerName},</p>
+      <p>Thanks for your interest in the <strong>${data.productName}</strong>.</p>
+      <p>A vendor will reach out to you within <strong>24 hours</strong> to discuss availability, pricing, and delivery options.</p>
+      <p>In the meantime, feel free to browse more scooters:</p>
+      <p><a href="${APP_URL}/scooters" style="background:#111315;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Browse all scooters →</a></p>
+      <hr/>
+      <p style="color:#666;font-size:12px;">ScootMart.ae · Dubai, UAE · <a href="mailto:hello@scootmart.ae">hello@scootmart.ae</a></p>
+    `,
+  })
+}
+
 export async function sendWelcomeEmail(to: string, name: string) {
   await sendEmail({
     to,
