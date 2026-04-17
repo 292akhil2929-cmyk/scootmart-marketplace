@@ -1,7 +1,7 @@
 // Gemini AI wrapper — server-side only
 import { google } from '@ai-sdk/google'
 
-export const geminiFlash = google('gemini-1.5-flash')
+export const geminiFlash = google('gemini-2.0-flash')
 
 const TAG = 'scootmart-21'
 const amz = (asin: string) =>
