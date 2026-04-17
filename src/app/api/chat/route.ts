@@ -34,7 +34,12 @@ export async function POST(req: Request) {
       messages,
       maxTokens: 800,
     })
-    return result.toDataStreamResponse()
+    return result.toDataStreamResponse({
+      getErrorMessage: (error) => {
+        console.error('[ScootBot stream error]', error)
+        return error instanceof Error ? error.message : String(error)
+      },
+    })
   } catch (err) {
     console.error('[Chat API]', err)
     return NextResponse.json(
