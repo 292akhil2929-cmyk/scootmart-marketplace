@@ -1,11 +1,11 @@
-// Gemini AI wrapper — server-side only
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
+// Groq AI wrapper — server-side only (free, no billing required)
+import { createGroq } from '@ai-sdk/groq'
 
-const google = createGoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY ?? '',
+const groq = createGroq({
+  apiKey: process.env.GROQ_API_KEY ?? '',
 })
 
-export const geminiFlash = google('gemini-2.0-flash')
+export const geminiFlash = groq('llama-3.3-70b-versatile')
 
 const TAG = 'scootmart-21'
 const amz = (asin: string) =>

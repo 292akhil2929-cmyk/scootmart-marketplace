@@ -18,15 +18,6 @@ function isRateLimited(ip: string): boolean {
   return false
 }
 
-export async function GET() {
-  try {
-    const { generateText } = await import('ai')
-    const { text } = await generateText({ model: geminiFlash, prompt: 'Say hi in one word.' })
-    return NextResponse.json({ ok: true, text, key_set: !!process.env.GEMINI_API_KEY })
-  } catch (err) {
-    return NextResponse.json({ ok: false, error: String(err), key_set: !!process.env.GEMINI_API_KEY, key_prefix: process.env.GEMINI_API_KEY?.slice(0, 8) })
-  }
-}
 
 export async function POST(req: Request) {
   try {
