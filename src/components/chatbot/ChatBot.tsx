@@ -6,19 +6,19 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const QUICK_REPLIES_INITIAL = [
-  { label: '👋 Just browsing', value: 'Hi! Just browsing around' },
-  { label: '🛵 Find me a scooter', value: 'Help me find a scooter' },
-  { label: '🚴 Show me e-bikes', value: 'What e-bikes do you have?' },
-  { label: '💰 Budget options', value: 'What are your cheapest options?' },
+  { label: '🛵 Best commuter scooter', value: 'What is the best scooter for daily commuting in Dubai?' },
+  { label: '💰 Under AED 2,000', value: 'Show me scooters under AED 2,000' },
+  { label: '🚚 Delivery rider', value: 'I am a delivery rider, what scooter do you recommend?' },
+  { label: '🔍 Compare top models', value: 'Compare your top 3 most popular scooters' },
 ]
 
 const QUICK_REPLIES_FOLLOW_UP = [
-  { label: '📍 I\'m in Dubai', value: 'I\'m based in Dubai' },
-  { label: '📍 I\'m in Abu Dhabi', value: 'I\'m based in Abu Dhabi' },
-  { label: '🏍️ Daily commute', value: 'I need it for daily commuting' },
-  { label: '🛵 Delivery work', value: 'I\'m a delivery rider' },
-  { label: '💸 Under AED 2,000', value: 'My budget is under AED 2,000' },
-  { label: '⚡ RTA compliant', value: 'I need an RTA compliant scooter' },
+  { label: '📍 Based in Dubai', value: 'I am based in Dubai' },
+  { label: '📍 Abu Dhabi', value: 'I am based in Abu Dhabi' },
+  { label: '⚡ Must be RTA compliant', value: 'It must be RTA compliant for Dubai roads' },
+  { label: '🏷️ Certified used only', value: 'I only want certified used scooters' },
+  { label: '🔋 Best range', value: 'Which has the best real-world range in UAE heat?' },
+  { label: '🛡️ Seller reliability', value: 'How do I know if a seller is reliable on ScootMart?' },
 ]
 
 function TypingDots() {
@@ -32,6 +32,25 @@ function TypingDots() {
         />
       ))}
     </div>
+  )
+}
+
+function renderWithLinks(text: string) {
+  const parts = text.split(/(https?:\/\/[^\s)]+)/g)
+  return parts.map((part, i) =>
+    part.match(/^https?:\/\//) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2 opacity-80 hover:opacity-100 break-all"
+      >
+        {part.includes('amazon.ae') ? '🛒 View on Amazon.ae' : part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
   )
 }
 
@@ -52,7 +71,7 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
             : 'bg-muted text-foreground rounded-bl-none'
         )}
       >
-        {content}
+        {renderWithLinks(content)}
       </div>
     </div>
   )
@@ -72,17 +91,15 @@ export function ChatBot() {
       {
         id: 'welcome',
         role: 'assistant',
-        content: "Hey! 👋 I'm Scoot — your ScootMart AI assistant.\n\nLooking for an electric scooter or e-bike in the UAE? I've got you covered. What brings you in today?",
+        content: "Hey! 👋 I'm Scoot — your ScootMart AI expert.\n\nI know every scooter & e-bike on this site: full specs, real UAE range in the heat, which sellers are verified, and where to get the best deal — Amazon.ae or our marketplace.\n\nWhat are you looking for today?",
       },
     ],
   })
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
-  // Show notification badge when chat is closed and bot replies
   useEffect(() => {
     if (!open && messages.length > prevMsgCount.current) {
       setHasNewMessage(true)
@@ -90,7 +107,6 @@ export function ChatBot() {
     prevMsgCount.current = messages.length
   }, [messages, open])
 
-  // Clear badge when opened
   useEffect(() => {
     if (open) {
       setHasNewMessage(false)
@@ -107,7 +123,6 @@ export function ChatBot() {
 
   return (
     <>
-      {/* Floating launcher button */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
@@ -124,14 +139,11 @@ export function ChatBot() {
         </button>
       )}
 
-      {/* Chat window */}
       {open && (
         <div className={cn(
           'fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] bg-background border rounded-2xl shadow-2xl flex flex-col transition-all duration-300',
           minimized ? 'h-14' : 'h-[600px] max-h-[85vh]'
         )}>
-
-          {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b bg-primary text-white rounded-t-2xl shrink-0">
             <div className="relative">
               <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
@@ -161,13 +173,10 @@ export function ChatBot() {
 
           {!minimized && (
             <>
-              {/* Messages area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth">
                 {messages.map(msg => (
                   <MessageBubble key={msg.id} role={msg.role} content={msg.content} />
                 ))}
-
-                {/* Typing indicator */}
                 {isLoading && (
                   <div className="flex gap-2 items-end">
                     <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
@@ -178,11 +187,9 @@ export function ChatBot() {
                     </div>
                   </div>
                 )}
-
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick reply chips */}
               {(showInitialQuickReplies || showFollowUpReplies) && (
                 <div className="px-4 py-2 border-t bg-muted/30 flex flex-wrap gap-1.5 shrink-0">
                   {(showInitialQuickReplies ? QUICK_REPLIES_INITIAL : QUICK_REPLIES_FOLLOW_UP).map(qr => (
@@ -198,16 +205,12 @@ export function ChatBot() {
                 </div>
               )}
 
-              {/* Input bar */}
-              <form
-                onSubmit={handleSubmit}
-                className="flex gap-2 p-3 border-t shrink-0"
-              >
+              <form onSubmit={handleSubmit} className="flex gap-2 p-3 border-t shrink-0">
                 <input
                   ref={inputRef}
                   value={input}
                   onChange={handleInputChange}
-                  placeholder="Say hi or ask anything..."
+                  placeholder="Ask me anything about scooters..."
                   disabled={isLoading}
                   className="flex-1 text-sm bg-muted rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 placeholder:text-muted-foreground"
                   onKeyDown={e => {
