@@ -1,8 +1,10 @@
 // Groq AI wrapper — server-side only (free, no billing required)
-import { createGroq } from '@ai-sdk/groq'
+// Uses OpenAI-compatible endpoint via @ai-sdk/openai (already installed)
+import { createOpenAI } from '@ai-sdk/openai'
 
-const groq = createGroq({
+const groq = createOpenAI({
   apiKey: process.env.GROQ_API_KEY ?? '',
+  baseURL: 'https://api.groq.com/openai/v1',
 })
 
 export const geminiFlash = groq('llama-3.3-70b-versatile')
