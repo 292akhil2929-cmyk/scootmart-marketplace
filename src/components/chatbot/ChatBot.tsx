@@ -85,7 +85,7 @@ export function ChatBot() {
   const inputRef = useRef<HTMLInputElement>(null)
   const prevMsgCount = useRef(1)
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error, append } = useChat({
     api: '/api/chat',
     initialMessages: [
       {
@@ -94,6 +94,9 @@ export function ChatBot() {
         content: "Hey! 👋 I'm Scoot — your ScootMart AI expert.\n\nI know every scooter & e-bike on this site: full specs, real UAE range in the heat, which sellers are verified, and where to get the best deal — Amazon.ae or our marketplace.\n\nWhat are you looking for today?",
       },
     ],
+    onError: (err) => {
+      console.error('[ScootBot error]', err)
+    },
   })
 
   useEffect(() => {
@@ -184,6 +187,16 @@ export function ChatBot() {
                     </div>
                     <div className="bg-muted rounded-2xl rounded-bl-none px-4 py-2.5">
                       <TypingDots />
+                    </div>
+                  </div>
+                )}
+                {error && !isLoading && (
+                  <div className="flex gap-2 items-end">
+                    <div className="h-7 w-7 rounded-full bg-black/10 flex items-center justify-center shrink-0">
+                      <Bot className="h-3.5 w-3.5 text-black" />
+                    </div>
+                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl rounded-bl-none px-3.5 py-2.5 text-sm">
+                      Sorry, something went wrong. Please try again in a moment.
                     </div>
                   </div>
                 )}
