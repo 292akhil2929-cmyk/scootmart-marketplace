@@ -1,5 +1,9 @@
 // Gemini AI wrapper — server-side only
-import { google } from '@ai-sdk/google'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
+
+const google = createGoogleGenerativeAI({
+  apiKey: process.env.GEMINI_API_KEY ?? '',
+})
 
 export const geminiFlash = google('gemini-2.0-flash')
 
