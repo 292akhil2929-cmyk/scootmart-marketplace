@@ -6,6 +6,7 @@ import './globals.css'
 import { ScrollRevealInit } from '@/components/layout/ScrollRevealInit'
 import { Toaster } from '@/components/ui/toaster'
 import { Providers } from './providers'
+import { ChatBot } from '@/components/chatbot/ChatBot'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ScrollRevealInit />
           {children}
           <Toaster />
+          <ChatBot />
         </Providers>
       </body>
     </html>
