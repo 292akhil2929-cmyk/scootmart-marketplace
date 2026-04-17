@@ -59,15 +59,15 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
   return (
     <div className={cn('flex gap-2 items-end', isUser ? 'justify-end' : 'justify-start')}>
       {!isUser && (
-        <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center shrink-0 mb-0.5">
-          <Bot className="h-3.5 w-3.5 text-primary" />
+        <div className="h-7 w-7 rounded-full bg-black/10 flex items-center justify-center shrink-0 mb-0.5">
+          <Bot className="h-3.5 w-3.5 text-black" />
         </div>
       )}
       <div
         className={cn(
           'max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words',
           isUser
-            ? 'bg-primary text-white rounded-br-none'
+            ? 'bg-black text-white rounded-br-none'
             : 'bg-muted text-foreground rounded-bl-none'
         )}
       >
@@ -126,12 +126,12 @@ export function ChatBot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-primary text-white rounded-full pl-4 pr-5 py-3 shadow-xl hover:bg-primary/90 transition-all hover:scale-105 group"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-black text-white rounded-full pl-4 pr-5 py-3 shadow-xl hover:bg-black/85 transition-all hover:scale-105 group"
         >
           <div className="relative">
             <Bot className="h-5 w-5" />
             {hasNewMessage && (
-              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-primary animate-pulse" />
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-black animate-pulse" />
             )}
           </div>
           <span className="text-sm font-semibold">AI Scooter Expert</span>
@@ -144,12 +144,12 @@ export function ChatBot() {
           'fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] bg-background border rounded-2xl shadow-2xl flex flex-col transition-all duration-300',
           minimized ? 'h-14' : 'h-[600px] max-h-[85vh]'
         )}>
-          <div className="flex items-center gap-3 px-4 py-3 border-b bg-primary text-white rounded-t-2xl shrink-0">
+          <div className="flex items-center gap-3 px-4 py-3 border-b bg-black text-white rounded-t-2xl shrink-0">
             <div className="relative">
               <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
                 <Bot className="h-4.5 w-4.5" />
               </div>
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-primary" />
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-black" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold leading-tight">Scoot AI</p>
@@ -179,8 +179,8 @@ export function ChatBot() {
                 ))}
                 {isLoading && (
                   <div className="flex gap-2 items-end">
-                    <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                      <Bot className="h-3.5 w-3.5 text-primary" />
+                    <div className="h-7 w-7 rounded-full bg-black/10 flex items-center justify-center shrink-0">
+                      <Bot className="h-3.5 w-3.5 text-black" />
                     </div>
                     <div className="bg-muted rounded-2xl rounded-bl-none px-4 py-2.5">
                       <TypingDots />
@@ -197,7 +197,7 @@ export function ChatBot() {
                       key={qr.value}
                       onClick={() => sendQuickReply(qr.value)}
                       disabled={isLoading}
-                      className="text-xs bg-background border border-border hover:border-primary hover:text-primary text-muted-foreground rounded-full px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-xs bg-background border border-border hover:border-black hover:text-black text-muted-foreground rounded-full px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {qr.label}
                     </button>
@@ -212,7 +212,7 @@ export function ChatBot() {
                   onChange={handleInputChange}
                   placeholder="Ask me anything about scooters..."
                   disabled={isLoading}
-                  className="flex-1 text-sm bg-muted rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 placeholder:text-muted-foreground"
+                  className="flex-1 text-sm bg-muted rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-black/20 disabled:opacity-50 placeholder:text-muted-foreground"
                   onKeyDown={e => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()
@@ -223,7 +223,7 @@ export function ChatBot() {
                 <Button
                   type="submit"
                   size="icon"
-                  className="rounded-full h-9 w-9 shrink-0"
+                  className="rounded-full h-9 w-9 shrink-0 bg-black hover:bg-black/85 text-white"
                   disabled={isLoading || !input.trim()}
                 >
                   <Send className="h-4 w-4" />
