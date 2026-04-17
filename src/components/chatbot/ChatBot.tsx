@@ -212,8 +212,8 @@ export function ChatBot() {
                   onChange={handleInputChange}
                   placeholder="Ask me anything about scooters..."
                   disabled={isLoading}
-                  className="flex-1 text-sm bg-black text-white rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-black/40 disabled:opacity-50 placeholder:text-white/40"
-                  style={{ color: 'white' }}
+                  className="flex-1 text-sm rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-black/40 disabled:opacity-50"
+                  style={{ backgroundColor: '#000', color: '#fff', caretColor: '#fff' }}
                   onKeyDown={e => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()
