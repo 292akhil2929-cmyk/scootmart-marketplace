@@ -18,6 +18,16 @@ function isRateLimited(ip: string): boolean {
   return false
 }
 
+export async function GET() {
+  try {
+    const { generateText } = await import('ai')
+    const { text } = await generateText({ model: geminiFlash, prompt: 'Say hi in one word.' })
+    return NextResponse.json({ ok: true, text, key_set: !!process.env.GEMINI_API_KEY })
+  } catch (err) {
+    return NextResponse.json({ ok: false, error: String(err), key_set: !!process.env.GEMINI_API_KEY, key_prefix: process.env.GEMINI_API_KEY?.slice(0, 8) })
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? 'unknown'
@@ -34,16 +44,11 @@ export async function POST(req: Request) {
       messages,
       maxTokens: 800,
     })
-    return result.toDataStreamResponse({
-      getErrorMessage: (error) => {
-        console.error('[ScootBot stream error]', error)
-        return error instanceof Error ? error.message : String(error)
-      },
-    })
+    return result.toDataStreamResponse()
   } catch (err) {
     console.error('[Chat API]', err)
     return NextResponse.json(
-      { error: 'ScootBot is having a moment. Try again shortly or email hello@scootmart.ae' },
+      { error: String(err) },
       { status: 500 }
     )
   }
