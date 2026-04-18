@@ -93,7 +93,7 @@ export function MinimalNav() {
           ) : (
             <Link
               href="/login"
-              className="hidden md:inline-flex items-center h-9 px-4 rounded-full bg-white text-neutral-900 text-sm font-semibold border border-neutral-200 hover:bg-neutral-100 transition-colors shadow-sm"
+              className="hidden md:inline-flex items-center h-9 px-4 rounded-full bg-black text-white text-sm font-semibold hover:bg-neutral-800 transition-colors"
             >
               Sign in
             </Link>
