@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { OrganizationJsonLd, WebsiteJsonLd } from '@/components/seo/JsonLd'
 import { MinimalNav } from '@/components/shop/MinimalNav'
 import { HeroEcom } from '@/components/shop/HeroEcom'
 import { FeatureStrip } from '@/components/shop/FeatureStrip'
@@ -15,6 +16,8 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <main className="shop-root bg-white text-neutral-900 antialiased">
+      <OrganizationJsonLd />
+      <WebsiteJsonLd />
       <MinimalNav />
       <HeroEcom />
       <FeatureStrip />

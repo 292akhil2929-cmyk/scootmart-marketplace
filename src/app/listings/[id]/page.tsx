@@ -11,6 +11,7 @@ import { formatPrice, timeAgo, getBatteryColor, getScoreLabel } from '@/lib/util
 import { MapPin, Star, Zap, Battery, Shield, Phone, MessageSquare, Package } from 'lucide-react'
 import type { Listing } from '@/types/database'
 import type { Metadata } from 'next'
+import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 
 async function getListing(id: string): Promise<Listing | null> {
   const supabase = await createClient()
@@ -85,7 +86,30 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
     }
   }
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://scootmart-marketplace.vercel.app'
+  const avgRating = reviews.length
+    ? reviews.reduce((sum: number, r: any) => sum + (r.rating ?? 0), 0) / reviews.length
+    : undefined
+
   return (
+    <>
+      <ProductJsonLd
+        id={listing.id}
+        title={listing.title}
+        description={listing.description ?? undefined}
+        image={listing.images?.[0]}
+        price={listing.price}
+        condition={listing.condition}
+        brand={listing.brand ?? undefined}
+        url={`${appUrl}/listings/${listing.slug ?? listing.id}`}
+        rating={avgRating}
+        reviewCount={reviews.length || undefined}
+      />
+      <BreadcrumbJsonLd items={[
+        { name: 'Home', url: appUrl },
+        { name: 'Browse', url: `${appUrl}/browse` },
+        { name: listing.title, url: `${appUrl}/listings/${listing.slug ?? listing.id}` },
+      ]} />
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Left: Images + Details */}
@@ -338,5 +362,6 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
         </section>
       )}
     </div>
+    </>
   )
 }
