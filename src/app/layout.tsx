@@ -7,6 +7,7 @@ import { ScrollRevealInit } from '@/components/layout/ScrollRevealInit'
 import { Toaster } from '@/components/ui/toaster'
 import { Providers } from './providers'
 import { ChatBot } from '@/components/chatbot/ChatBot'
+import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <GoogleAnalytics />
         <Providers>
           <ScrollRevealInit />
           {children}
