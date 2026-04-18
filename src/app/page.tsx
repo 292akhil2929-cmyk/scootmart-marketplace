@@ -8,6 +8,8 @@ import { ProductGrid } from '@/components/shop/ProductGrid'
 import { SiteFooter } from '@/components/shop/SiteFooter'
 import type { Listing } from '@/types/database'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'ScootMart — Compare Electric Scooters & E-Bikes in UAE',
   description:
