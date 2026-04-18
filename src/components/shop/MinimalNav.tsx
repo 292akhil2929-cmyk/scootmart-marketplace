@@ -1,11 +1,9 @@
 'use client'
-// Clean, minimal top nav. Sticky, frosted on scroll.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { Search, ShoppingBag, Menu, X, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 const LINKS = [
   { href: '#shop', label: 'Shop' },
@@ -17,8 +15,8 @@ const LINKS = [
 export function MinimalNav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const supabase = createClient()
+  const [loggedIn, setLoggedIn] = useState(false)
+  const supabaseRef = useRef(createClient())
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -28,9 +26,12 @@ export function MinimalNav() {
   }, [])
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    const supabase = supabaseRef.current
+    supabase.auth.getSession().then(({ data }) => {
+      setLoggedIn(!!data.session)
+    })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null)
+      setLoggedIn(!!session)
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -39,14 +40,14 @@ export function MinimalNav() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-white/85 backdrop-blur-md border-b border-black/5'
-          : 'bg-transparent border-b border-transparent'
+          ? 'bg-white/90 backdrop-blur-md border-b border-black/5 shadow-sm'
+          : 'bg-white/80 backdrop-blur-sm border-b border-black/5'
       }`}
     >
       <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-white text-sm font-bold">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center text-white text-sm font-bold">
             S
           </div>
           <span className="font-semibold tracking-tight text-neutral-900 text-lg">
@@ -67,47 +68,39 @@ export function MinimalNav() {
           ))}
         </nav>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            aria-label="Search"
-            className="hidden md:flex w-9 h-9 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
-          >
+        {/* Desktop actions */}
+        <div className="hidden md:flex items-center gap-2">
+          <button aria-label="Search" className="w-9 h-9 flex items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 transition-colors">
             <Search className="w-4 h-4" />
           </button>
-          <button
-            aria-label="Cart"
-            className="relative w-9 h-9 flex items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
-          >
+          <button aria-label="Cart" className="relative w-9 h-9 flex items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 transition-colors">
             <ShoppingBag className="w-4 h-4" />
             <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
           </button>
-          {user ? (
-            <Link
-              href="/buyer/orders"
-              className="hidden md:flex w-9 h-9 items-center justify-center rounded-full bg-white border border-neutral-200 hover:bg-neutral-100 transition-colors"
-              title="My Account"
-            >
+          {loggedIn ? (
+            <Link href="/buyer/orders" className="w-9 h-9 flex items-center justify-center rounded-full border border-neutral-200 hover:bg-neutral-100 transition-colors" title="My Account">
               <User className="w-4 h-4 text-neutral-800" />
             </Link>
           ) : (
-            <Link
-              href="/login"
-              className="hidden md:inline-flex items-center h-9 px-4 rounded-full bg-black text-white text-sm font-semibold hover:bg-neutral-800 transition-colors"
-            >
+            <Link href="/login" className="inline-flex items-center h-9 px-4 rounded-full bg-black text-white text-sm font-semibold hover:bg-neutral-800 transition-colors">
               Sign in
             </Link>
           )}
-          <a
-            href="#shop"
-            className="hidden md:inline-flex items-center h-9 px-4 rounded-full bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors"
-          >
+          <a href="#shop" className="inline-flex items-center h-9 px-4 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium hover:bg-neutral-200 transition-colors">
             Shop Now
           </a>
+        </div>
+
+        {/* Mobile: cart + hamburger */}
+        <div className="flex md:hidden items-center gap-2">
+          <button aria-label="Cart" className="relative w-9 h-9 flex items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 transition-colors">
+            <ShoppingBag className="w-4 h-4" />
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          </button>
           <button
             aria-label="Menu"
-            onClick={() => setOpen((v) => !v)}
-            className="md:hidden w-9 h-9 flex items-center justify-center rounded-full text-neutral-700 hover:bg-neutral-100"
+            onClick={() => setOpen(v => !v)}
+            className="w-9 h-9 flex items-center justify-center rounded-full text-neutral-700 hover:bg-neutral-100"
           >
             {open ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
@@ -128,28 +121,16 @@ export function MinimalNav() {
                 {l.label}
               </a>
             ))}
-            {user ? (
-              <Link
-                href="/buyer/orders"
-                onClick={() => setOpen(false)}
-                className="mt-3 text-center py-3 rounded-full border border-neutral-300 text-neutral-800 text-sm font-medium"
-              >
+            {loggedIn ? (
+              <Link href="/buyer/orders" onClick={() => setOpen(false)} className="mt-3 text-center py-3 rounded-full border border-neutral-200 text-neutral-800 text-sm font-medium">
                 My Account
               </Link>
             ) : (
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="mt-3 text-center py-3 rounded-full border border-neutral-300 text-neutral-800 text-sm font-medium"
-              >
+              <Link href="/login" onClick={() => setOpen(false)} className="mt-3 text-center py-3 rounded-full bg-black text-white text-sm font-semibold">
                 Sign in
               </Link>
             )}
-            <a
-              href="#shop"
-              onClick={() => setOpen(false)}
-              className="mt-2 text-center py-3 rounded-full bg-neutral-900 text-white text-sm font-medium"
-            >
+            <a href="#shop" onClick={() => setOpen(false)} className="mt-2 text-center py-3 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium">
               Shop Now
             </a>
           </nav>

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 
@@ -9,7 +9,8 @@ interface Props {
 
 export function OAuthButtons({ redirectTo = '/' }: Props) {
   const [loading, setLoading] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabaseRef = useRef(createClient())
+  const supabase = supabaseRef.current
 
   const signInWith = async (provider: 'google' | 'facebook' | 'apple') => {
     setLoading(provider)
