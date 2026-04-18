@@ -3,7 +3,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Search, ShoppingBag, Menu, X } from 'lucide-react'
+import { Search, ShoppingBag, Menu, X, User } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 const LINKS = [
   { href: '#shop', label: 'Shop' },
@@ -15,12 +17,22 @@ const LINKS = [
 export function MinimalNav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const [user, setUser] = useState<SupabaseUser | null>(null)
+  const supabase = createClient()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
   return (
@@ -70,6 +82,22 @@ export function MinimalNav() {
             <ShoppingBag className="w-4 h-4" />
             <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
           </button>
+          {user ? (
+            <Link
+              href="/buyer/orders"
+              className="hidden md:flex w-9 h-9 items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors"
+              title="My Account"
+            >
+              <User className="w-4 h-4 text-neutral-700" />
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden md:inline-flex items-center h-9 px-4 rounded-full border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors"
+            >
+              Sign in
+            </Link>
+          )}
           <a
             href="#shop"
             className="hidden md:inline-flex items-center h-9 px-4 rounded-full bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors"
@@ -100,10 +128,27 @@ export function MinimalNav() {
                 {l.label}
               </a>
             ))}
+            {user ? (
+              <Link
+                href="/buyer/orders"
+                onClick={() => setOpen(false)}
+                className="mt-3 text-center py-3 rounded-full border border-neutral-300 text-neutral-800 text-sm font-medium"
+              >
+                My Account
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="mt-3 text-center py-3 rounded-full border border-neutral-300 text-neutral-800 text-sm font-medium"
+              >
+                Sign in
+              </Link>
+            )}
             <a
               href="#shop"
               onClick={() => setOpen(false)}
-              className="mt-3 text-center py-3 rounded-full bg-neutral-900 text-white text-sm font-medium"
+              className="mt-2 text-center py-3 rounded-full bg-neutral-900 text-white text-sm font-medium"
             >
               Shop Now
             </a>
