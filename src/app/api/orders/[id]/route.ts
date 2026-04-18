@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { sendOrderShippedBuyer, sendPayoutReleasedSeller } from '@/lib/email'
 import { NextResponse } from 'next/server'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -48,15 +49,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   switch (action) {
     case 'ship':
       if (!isSeller && !isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      if (!tracking_number) return NextResponse.json({ error: 'tracking_number required' }, { status: 400 })
       update = { status: 'shipped', tracking_number, shipped_at: new Date().toISOString() }
-      // Notify buyer
       await supabase.from('notifications').insert({
         user_id: order.buyer_id,
         type: 'order_update',
-        title: 'Your order has been shipped!',
-        body: tracking_number ? `Tracking: ${tracking_number}` : 'The seller has shipped your item.',
+        title: 'Your order has been shipped! 🚚',
+        body: `Tracking: ${tracking_number}`,
         data: { order_id: id },
       })
+      // Send shipping email to buyer
+      {
+        const { data: buyerUser } = await supabase.auth.admin.getUserById(order.buyer_id)
+        const { data: listingData } = await supabase.from('listings').select('title').eq('id', order.listing_id).single()
+        if (buyerUser.user?.email && listingData) {
+          sendOrderShippedBuyer(buyerUser.user.email, listingData.title, tracking_number, body.carrier ?? 'Courier').catch(console.error)
+        }
+      }
       break
 
     case 'confirm_receipt':
@@ -68,14 +77,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         .eq('order_id', id)
       // Update seller stats
       try { await supabase.rpc('increment_seller_sales', { seller_id: order.seller_id }) } catch (_) {}
-      // Notify seller
       await supabase.from('notifications').insert({
         user_id: order.seller_id,
         type: 'payment',
-        title: 'Payment released!',
+        title: 'Payment released! 💸',
         body: `AED ${order.seller_payout} has been released from escrow.`,
         data: { order_id: id },
       })
+      // Send payout email to seller
+      {
+        const { data: sellerUser } = await supabase.auth.admin.getUserById(order.seller_id)
+        const { data: listingData } = await supabase.from('listings').select('title').eq('id', order.listing_id).single()
+        if (sellerUser.user?.email && listingData) {
+          sendPayoutReleasedSeller(sellerUser.user.email, listingData.title, order.seller_payout).catch(console.error)
+        }
+      }
       break
 
     case 'dispute':

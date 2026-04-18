@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
   const deliveryFee = delivery_option === 'white_glove' ? 150 : 0
   const totalAmount = listing.price + deliveryFee
-  const commissionAmount = Math.round(totalAmount * commissionPercent) / 100
+  const commissionAmount = Math.round((totalAmount * commissionPercent) / 100)
   const sellerPayout = totalAmount - commissionAmount
 
   // Create order
@@ -63,6 +63,30 @@ export async function POST(request: Request) {
   })
 
   return NextResponse.json({ orderId: order.id, checkoutUrl: session.url }, { status: 201 })
+}
+
+export async function DELETE(request: Request) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { order_id } = await request.json()
+  if (!order_id) return NextResponse.json({ error: 'order_id required' }, { status: 400 })
+
+  const { data: order } = await supabase.from('orders').select('*').eq('id', order_id).single()
+  if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+  if (order.buyer_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (order.status !== 'pending_payment') {
+    return NextResponse.json({ error: 'Only pending orders can be cancelled' }, { status: 400 })
+  }
+
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'cancelled' })
+    .eq('id', order_id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ success: true })
 }
 
 export async function GET(request: Request) {
