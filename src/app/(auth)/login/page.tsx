@@ -2,9 +2,6 @@
 import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Zap } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 
@@ -27,32 +24,57 @@ function LoginForm() {
   }
 
   return (
-    <div className="bg-background rounded-2xl border p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
       <OAuthButtons redirectTo={redirect} />
 
-      <div className="relative my-4">
-        <div className="absolute inset-0 flex items-center"><div className="w-full border-t" /></div>
-        <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">or</span></div>
+      <div className="relative my-5">
+        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-neutral-200" /></div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-white px-3 text-neutral-400 font-medium">or continue with email</span>
+        </div>
       </div>
 
-      <form onSubmit={signIn} className="space-y-3">
-        {error && <div className="rounded-lg bg-destructive/10 text-destructive text-sm p-3">{error}</div>}
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Email</label>
-          <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
+      <form onSubmit={signIn} className="space-y-4">
+        {error && (
+          <div className="rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm p-3">{error}</div>
+        )}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-neutral-700">Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            required
+            className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-colors"
+          />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Password</label>
-            <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary">Forgot password?</Link>
+            <label className="text-sm font-medium text-neutral-700">Password</label>
+            <Link href="/forgot-password" className="text-xs text-neutral-400 hover:text-black transition-colors">Forgot password?</Link>
           </div>
-          <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+            className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-colors"
+          />
         </div>
-        <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</Button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full h-10 rounded-lg bg-black text-white text-sm font-semibold hover:bg-neutral-800 transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Signing in…' : 'Sign in'}
+        </button>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground mt-4">
-        Don't have an account? <Link href="/register" className="text-primary hover:underline">Sign up</Link>
+      <p className="text-center text-sm text-neutral-500 mt-5">
+        Don't have an account?{' '}
+        <Link href="/register" className="text-black font-semibold hover:underline">Sign up</Link>
       </p>
     </div>
   )
@@ -60,17 +82,17 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl mb-2">
-            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center text-white"><Zap className="h-5 w-5" /></div>
-            <span><span className="text-primary">Scoot</span>Mart.ae</span>
+          <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
+            <div className="h-9 w-9 rounded-lg bg-black flex items-center justify-center text-white font-bold text-sm">S</div>
+            <span className="text-black">ScootMart.ae</span>
           </Link>
-          <h1 className="text-xl font-semibold">Welcome back</h1>
-          <p className="text-muted-foreground text-sm mt-1">Sign in to your ScootMart account</p>
+          <h1 className="text-2xl font-bold text-black">Welcome back</h1>
+          <p className="text-neutral-500 text-sm mt-1">Sign in to your ScootMart account</p>
         </div>
-        <Suspense fallback={<div className="rounded-2xl border bg-card p-6 animate-pulse h-64" />}>
+        <Suspense fallback={<div className="rounded-2xl border bg-white p-8 animate-pulse h-64" />}>
           <LoginForm />
         </Suspense>
       </div>
