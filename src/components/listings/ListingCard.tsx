@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { MapPin, Zap, Gauge, ExternalLink, ArrowRight } from 'lucide-react'
 import { formatPrice } from '@/lib/utils'
+import { ProductImage } from './ProductImage'
 import type { Listing } from '@/types/database'
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -29,11 +29,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
     >
       {/* Image */}
       <div className="relative aspect-[4/3] bg-neutral-100 overflow-hidden">
-        {image ? (
-          <Image src={image} alt={listing.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="(max-width: 768px) 100vw, 33vw" />
-        ) : (
-          <div className="flex items-center justify-center h-full text-4xl">🛴</div>
-        )}
+        <ProductImage src={image} alt={listing.title} />
 
         {/* Platform badge */}
         <div className="absolute top-2 left-2">

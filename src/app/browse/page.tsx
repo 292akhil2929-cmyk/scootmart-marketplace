@@ -80,7 +80,7 @@ export default async function BrowsePage({ searchParams }: { searchParams: Promi
         </div>
 
         {listings.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
             {listings.map(listing => <ListingCard key={listing.id} listing={listing} />)}
           </div>
         ) : (
