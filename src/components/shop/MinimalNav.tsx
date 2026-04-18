@@ -85,15 +85,15 @@ export function MinimalNav() {
           {user ? (
             <Link
               href="/buyer/orders"
-              className="hidden md:flex w-9 h-9 items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors"
+              className="hidden md:flex w-9 h-9 items-center justify-center rounded-full bg-white border border-neutral-200 hover:bg-neutral-100 transition-colors"
               title="My Account"
             >
-              <User className="w-4 h-4 text-neutral-700" />
+              <User className="w-4 h-4 text-neutral-800" />
             </Link>
           ) : (
             <Link
               href="/login"
-              className="hidden md:inline-flex items-center h-9 px-4 rounded-full border border-neutral-300 text-neutral-700 text-sm font-medium hover:bg-neutral-100 transition-colors"
+              className="hidden md:inline-flex items-center h-9 px-4 rounded-full bg-white text-neutral-900 text-sm font-semibold border border-neutral-200 hover:bg-neutral-100 transition-colors shadow-sm"
             >
               Sign in
             </Link>
