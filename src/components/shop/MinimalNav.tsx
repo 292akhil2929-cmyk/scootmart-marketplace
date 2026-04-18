@@ -2,14 +2,13 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
-import { Menu, X, User, ShoppingBag } from 'lucide-react'
+import { Menu, X, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const LINKS = [
-  { href: '#shop', label: 'Shop' },
-  { href: '#features', label: 'Features' },
-  { href: '#compare', label: 'Compare' },
-  { href: '#faq', label: 'Support' },
+  { href: '/browse', label: 'Browse' },
+  { href: '/compare', label: 'Compare' },
+  { href: '/browse?rta_compliant=true', label: 'RTA Compliant' },
 ]
 
 export function MinimalNav() {
@@ -27,25 +26,25 @@ export function MinimalNav() {
   }, [])
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-neutral-100 shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-neutral-100">
       <div className="max-w-7xl mx-auto px-5 h-16 flex items-center justify-between">
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center text-white text-sm font-bold">S</div>
-          <span className="font-semibold text-neutral-900 text-lg">Scootmart</span>
+          <span className="font-bold text-neutral-900 text-lg tracking-tight">ScootMart</span>
         </Link>
 
-        {/* Desktop nav links — hidden on mobile */}
+        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-8">
           {LINKS.map(l => (
-            <a key={l.href} href={l.href} className="text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors">
+            <Link key={l.href} href={l.href} className="text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors">
               {l.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
-        {/* Action buttons — ALWAYS visible */}
+        {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           {loggedIn ? (
             <Link href="/buyer/orders" title="My Account"
@@ -58,11 +57,10 @@ export function MinimalNav() {
               Sign in
             </Link>
           )}
-          <a href="#shop"
-            className="flex items-center h-9 px-4 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium hover:bg-neutral-200 transition-colors">
-            Shop Now
-          </a>
-          {/* Hamburger — mobile only */}
+          <Link href="/browse"
+            className="hidden md:flex items-center h-9 px-4 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium hover:bg-neutral-200 transition-colors">
+            Browse all
+          </Link>
           <button
             aria-label="Menu"
             onClick={() => setOpen(v => !v)}
@@ -73,16 +71,20 @@ export function MinimalNav() {
         </div>
       </div>
 
-      {/* Mobile drawer — nav links only */}
+      {/* Mobile menu */}
       {open && (
         <div className="md:hidden bg-white border-b border-neutral-100">
           <nav className="px-5 py-3 flex flex-col">
             {LINKS.map(l => (
-              <a key={l.href} href={l.href} onClick={() => setOpen(false)}
+              <Link key={l.href} href={l.href} onClick={() => setOpen(false)}
                 className="py-3 text-sm font-medium text-neutral-800 border-b border-neutral-100 last:border-0">
                 {l.label}
-              </a>
+              </Link>
             ))}
+            <Link href="/browse" onClick={() => setOpen(false)}
+              className="py-3 text-sm font-medium text-neutral-800">
+              Browse all
+            </Link>
           </nav>
         </div>
       )}

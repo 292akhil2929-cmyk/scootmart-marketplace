@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { sendNewListingAdminNotification } from '@/lib/email'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -71,6 +72,18 @@ export async function POST(request: Request) {
   if (specs && listing) {
     await supabase.from('listing_specs').insert({ ...specs, listing_id: listing.id })
   }
+
+  // Notify admin of new listing pending review
+  const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+  sendNewListingAdminNotification({
+    sellerName: profile?.full_name ?? 'Unknown Seller',
+    sellerEmail: user.email ?? '',
+    listingTitle: listing.title ?? listingData.title ?? 'Untitled',
+    listingId: listing.id,
+    price: listing.price ?? listingData.price ?? 0,
+    condition: listing.condition ?? listingData.condition ?? '',
+    emirate: listing.location_emirate ?? listingData.location_emirate ?? '',
+  }).catch(() => {}) // fire-and-forget, don't block response
 
   return NextResponse.json({ data: listing }, { status: 201 })
 }

@@ -7,9 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { createClient } from '@/lib/supabase/client'
 import { toast } from '@/hooks/use-toast'
 import { EMIRATES, BRANDS } from '@/lib/utils'
-import { Upload, ChevronRight } from 'lucide-react'
+import { Upload, ChevronRight, ExternalLink } from 'lucide-react'
 
 const STEPS = ['Basic Info', 'Specs', 'Images & Docs', 'Review']
+
+const AFFILIATE_SOURCES = [
+  { value: 'amazon', label: 'Amazon.ae' },
+  { value: 'noon', label: 'Noon' },
+  { value: 'xiaomi', label: 'Xiaomi UAE Store' },
+  { value: 'carrefour', label: 'Carrefour UAE' },
+  { value: 'sharaf_dg', label: 'Sharaf DG' },
+  { value: 'other', label: 'Other' },
+]
 
 export default function NewListingPage() {
   const router = useRouter()
@@ -17,12 +26,14 @@ export default function NewListingPage() {
   const [saving, setSaving] = useState(false)
   const [images, setImages] = useState<File[]>([])
   const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [isAffiliate, setIsAffiliate] = useState(false)
 
   const [form, setForm] = useState({
     title: '', description: '', type: 'scooter', condition: 'new',
     brand: '', model: '', year: new Date().getFullYear(), color: '',
     price: '', original_price: '', location_emirate: '', location_area: '',
     rta_compliant: false, certified_used: false, uae_tested: false,
+    affiliate_url: '', affiliate_source: 'amazon',
   })
 
   const [specs, setSpecs] = useState({
@@ -61,6 +72,9 @@ export default function NewListingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          is_affiliate: isAffiliate,
+          affiliate_url: isAffiliate ? form.affiliate_url : null,
+          affiliate_source: isAffiliate ? form.affiliate_source : null,
           price: Number(form.price),
           original_price: form.original_price ? Number(form.original_price) : null,
           year: Number(form.year),
@@ -84,7 +98,7 @@ export default function NewListingPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
 
-      toast({ title: 'Listing submitted!', description: 'Under review — usually approved within 24 hours.' })
+      toast({ title: 'Listing submitted!', description: isAffiliate ? 'Affiliate listing is under review.' : 'Under review — usually approved within 24 hours.' })
       router.push('/seller/dashboard')
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
@@ -104,6 +118,23 @@ export default function NewListingPage() {
       <h1 className="text-2xl font-bold mb-2">List an Item</h1>
       <p className="text-muted-foreground mb-6">Fill in the details to create your listing</p>
 
+      {/* Affiliate toggle */}
+      <div className="rounded-xl border bg-card p-4 mb-6 flex items-start gap-4">
+        <div className="flex-1">
+          <p className="font-semibold text-sm">Affiliate Listing</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Toggle on if this scooter is sold on Amazon, Noon, Xiaomi Store, etc. and you're adding an affiliate link. Toggle off for direct P2P seller listings.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsAffiliate(v => !v)}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${isAffiliate ? 'bg-black' : 'bg-neutral-200'}`}
+        >
+          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${isAffiliate ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
       {/* Progress */}
       <div className="flex gap-2 mb-8">
         {STEPS.map((s, i) => (
@@ -117,6 +148,22 @@ export default function NewListingPage() {
       <div className="rounded-xl border bg-card p-6 space-y-4">
         {step === 0 && (
           <>
+            {isAffiliate && (
+              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 space-y-3">
+                <p className="text-sm font-semibold text-blue-900 flex items-center gap-2"><ExternalLink className="h-4 w-4" /> Affiliate Details</p>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Platform *</label>
+                  <Select value={form.affiliate_source} onValueChange={v => setForm(p => ({ ...p, affiliate_source: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{AFFILIATE_SOURCES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Affiliate URL * <span className="text-xs text-muted-foreground">(paste your tracked link)</span></label>
+                  <Input {...f('affiliate_url')} placeholder="https://www.amazon.ae/dp/B0BJMY4FKS?tag=scootmart-21" />
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 space-y-1">
                 <label className="text-sm font-medium">Listing Title *</label>
@@ -162,26 +209,30 @@ export default function NewListingPage() {
                 <label className="text-sm font-medium">Original Price (AED)</label>
                 <Input {...f('original_price')} type="number" placeholder="3599" />
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Emirate *</label>
-                <Select value={form.location_emirate} onValueChange={v => setForm(p => ({ ...p, location_emirate: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select emirate" /></SelectTrigger>
-                  <SelectContent>{EMIRATES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Area</label>
-                <Input {...f('location_area')} placeholder="e.g. Al Quoz, JBR" />
-              </div>
+              {!isAffiliate && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Emirate *</label>
+                    <Select value={form.location_emirate} onValueChange={v => setForm(p => ({ ...p, location_emirate: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select emirate" /></SelectTrigger>
+                      <SelectContent>{EMIRATES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Area</label>
+                    <Input {...f('location_area')} placeholder="e.g. Al Quoz, JBR" />
+                  </div>
+                </>
+              )}
               <div className="col-span-2 space-y-1">
                 <label className="text-sm font-medium">Description</label>
-                <textarea {...f('description')} rows={4} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Describe your item, usage history, UAE-specific notes..." />
+                <textarea {...f('description')} rows={4} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Describe the scooter, UAE-specific notes, heat performance..." />
               </div>
               <div className="col-span-2 flex flex-wrap gap-4">
                 {[
                   { field: 'rta_compliant', label: 'RTA Compliant' },
-                  { field: 'certified_used', label: 'Certified Used (inspection report required)' },
                   { field: 'uae_tested', label: 'UAE-Tested' },
+                  ...(!isAffiliate ? [{ field: 'certified_used', label: 'Certified Used (inspection report required)' }] : []),
                 ].map(({ field, label }) => (
                   <label key={field} className="flex items-center gap-2 cursor-pointer text-sm">
                     <input type="checkbox" checked={form[field as keyof typeof form] as boolean}
@@ -251,11 +302,9 @@ export default function NewListingPage() {
                 ))}
               </div>
             )}
-            {form.certified_used && (
-              <div className="rounded-lg border border-purple-200 bg-purple-50 dark:bg-purple-900/20 p-4">
-                <p className="text-sm font-semibold text-purple-800 dark:text-purple-200 mb-1">Inspection Report Required</p>
-                <p className="text-xs text-purple-700 dark:text-purple-300">Upload battery health report and mechanic inspection PDF. Or pay AED 199 for a ScootMart partner inspection.</p>
-                <Button size="sm" variant="outline" className="mt-2">Upload Inspection PDF</Button>
+            {isAffiliate && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                Tip: use the product's main image from the retailer's website for best results.
               </div>
             )}
           </div>
@@ -265,17 +314,36 @@ export default function NewListingPage() {
           <div className="space-y-3">
             <h3 className="font-semibold">Review your listing</h3>
             <div className="rounded-lg bg-muted p-4 text-sm space-y-2">
+              {isAffiliate && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Type</span>
+                  <span className="font-medium text-blue-700">Affiliate — {AFFILIATE_SOURCES.find(s => s.value === form.affiliate_source)?.label}</span>
+                </div>
+              )}
               <div className="flex justify-between"><span className="text-muted-foreground">Title</span><span className="font-medium">{form.title}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span className="capitalize">{form.type}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Condition</span><span className="capitalize">{form.condition}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Brand/Model</span><span>{form.brand} {form.model}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Condition</span><span className="capitalize">{form.condition}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Price</span><span className="font-bold text-primary">AED {form.price}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Location</span><span>{form.location_emirate}, {form.location_area}</span></div>
+              {!isAffiliate && form.location_emirate && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Location</span><span>{form.location_emirate}{form.location_area ? `, ${form.location_area}` : ''}</span></div>
+              )}
               <div className="flex justify-between"><span className="text-muted-foreground">Images</span><span>{imageUrls.length} photo(s)</span></div>
+              {isAffiliate && (
+                <div className="flex justify-between items-start gap-2">
+                  <span className="text-muted-foreground shrink-0">Affiliate URL</span>
+                  <span className="truncate text-right text-blue-700 text-xs">{form.affiliate_url}</span>
+                </div>
+              )}
             </div>
-            <div className="rounded-lg bg-primary/5 p-3 text-sm">
-              Your listing will go live after our team reviews it (usually within 24 hours). ScootMart charges <strong>8–12% commission</strong> only on successful sales.
-            </div>
+            {isAffiliate ? (
+              <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">
+                This is an affiliate listing. When buyers click "Buy on {AFFILIATE_SOURCES.find(s => s.value === form.affiliate_source)?.label}", they'll go to the retailer's page through your tracked link.
+              </div>
+            ) : (
+              <div className="rounded-lg bg-primary/5 p-3 text-sm">
+                Your listing will go live after our team reviews it (usually within 24 hours). ScootMart charges <strong>8–12% commission</strong> only on successful sales.
+              </div>
+            )}
           </div>
         )}
       </div>

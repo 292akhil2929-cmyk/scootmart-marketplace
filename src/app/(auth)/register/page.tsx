@@ -2,6 +2,7 @@
 import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Eye, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 
@@ -13,6 +14,7 @@ function RegisterForm() {
   const sentEmail = searchParams.get('email') ?? ''
   const [role, setRole] = useState<'buyer' | 'seller'>(defaultRole as 'buyer' | 'seller')
   const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
@@ -112,15 +114,26 @@ function RegisterForm() {
         </div>
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-neutral-700">Password</label>
-          <input
-            type="password"
-            value={form.password}
-            onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-            placeholder="Min 6 characters"
-            minLength={6}
-            required
-            className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-colors"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={form.password}
+              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+              placeholder="Min 6 characters"
+              minLength={6}
+              required
+              className="w-full h-10 px-3 pr-10 rounded-lg border border-neutral-200 text-sm outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-colors"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 transition-colors"
+              tabIndex={-1}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
         <button
           type="submit"

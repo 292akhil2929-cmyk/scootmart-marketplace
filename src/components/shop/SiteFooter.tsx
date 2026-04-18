@@ -1,33 +1,30 @@
-'use client'
-
 import Link from 'next/link'
 
-const COLS: { title: string; links: { label: string; href: string }[] }[] = [
+const COLS = [
   {
-    title: 'Shop',
+    title: 'Browse',
     links: [
-      { label: 'All scooters', href: '#shop' },
-      { label: 'Commuter', href: '#shop' },
-      { label: 'Performance', href: '#shop' },
-      { label: 'Off-road', href: '#shop' },
+      { label: 'All scooters', href: '/browse' },
+      { label: 'RTA Compliant', href: '/browse?rta_compliant=true' },
+      { label: 'Under AED 2,000', href: '/browse?max_price=2000' },
+      { label: 'Compare models', href: '/compare' },
     ],
   },
   {
-    title: 'Company',
+    title: 'Platforms',
     links: [
-      { label: 'About', href: '#' },
-      { label: 'Vendor program', href: '#' },
-      { label: 'Careers', href: '#' },
-      { label: 'Blog', href: '#' },
+      { label: 'Amazon.ae deals', href: '/browse?source=amazon' },
+      { label: 'Noon deals', href: '/browse?source=noon' },
+      { label: 'UAE sellers', href: '/browse?type=p2p' },
+      { label: 'Sell on ScootMart', href: '/seller/listings/new' },
     ],
   },
   {
-    title: 'Support',
+    title: 'Legal',
     links: [
-      { label: 'Help centre', href: '#' },
-      { label: 'Contact', href: '#' },
-      { label: 'Warranty', href: '#' },
-      { label: 'Shipping & returns', href: '#' },
+      { label: 'Privacy Policy', href: '/legal/privacy' },
+      { label: 'Terms of Use', href: '/legal/terms' },
+      { label: 'Affiliate Disclosure', href: '/legal/terms' },
     ],
   },
 ]
@@ -35,38 +32,31 @@ const COLS: { title: string; links: { label: string; href: string }[] }[] = [
 export function SiteFooter() {
   return (
     <footer className="bg-white border-t border-neutral-100">
-      <div className="max-w-7xl mx-auto px-5 md:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-[1.3fr_1fr_1fr_1fr] gap-10 md:gap-8 mb-12">
+      <div className="max-w-7xl mx-auto px-5 md:px-8 py-14">
+        <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr_1fr] gap-10 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-white text-sm font-bold">
-                S
-              </div>
-              <span className="font-semibold tracking-tight text-neutral-900 text-lg">
-                Scootmart
-              </span>
+              <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-white text-sm font-bold">S</div>
+              <span className="font-bold tracking-tight text-neutral-900 text-lg">ScootMart</span>
             </Link>
-            <p className="text-sm text-neutral-500 leading-relaxed max-w-xs">
-              UAE&apos;s curated marketplace for electric scooters and e-bikes.
-              Verified vendors. Real specs. Transparent pricing.
+            <p className="text-sm text-neutral-500 leading-relaxed max-w-xs mb-4">
+              UAE's e-scooter comparison platform. We aggregate listings from Amazon.ae, Noon, and verified local sellers so you can find the best deal in one place.
+            </p>
+            <p className="text-xs text-neutral-400">
+              We earn affiliate commissions on some links — at no extra cost to you.
             </p>
           </div>
 
-          {COLS.map((col) => (
+          {COLS.map(col => (
             <div key={col.title}>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-900 mb-4">
-                {col.title}
-              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-900 mb-4">{col.title}</p>
               <ul className="space-y-2.5">
-                {col.links.map((l) => (
+                {col.links.map(l => (
                   <li key={l.label}>
-                    <a
-                      href={l.href}
-                      className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors"
-                    >
+                    <Link href={l.href} className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors">
                       {l.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -76,19 +66,11 @@ export function SiteFooter() {
 
         <div className="pt-8 border-t border-neutral-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <p className="text-xs text-neutral-400">
-            © {new Date().getFullYear()} Scootmart · UAE · All rights reserved
+            © {new Date().getFullYear()} ScootMart · UAE · All rights reserved
           </p>
-          <div className="flex gap-5">
-            {['Privacy', 'Terms', 'Cookies'].map((l) => (
-              <a
-                key={l}
-                href="#"
-                className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors"
-              >
-                {l}
-              </a>
-            ))}
-          </div>
+          <p className="text-xs text-neutral-400">
+            Questions? <a href="mailto:hello@scootmart.com" className="hover:text-neutral-900 transition-colors">hello@scootmart.com</a>
+          </p>
         </div>
       </div>
     </footer>

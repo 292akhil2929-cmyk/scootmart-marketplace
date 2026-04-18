@@ -325,6 +325,52 @@ export async function sendOrderShippedBuyer(
   })
 }
 
+export async function sendNewListingAdminNotification(
+  data: {
+    sellerName: string
+    sellerEmail: string
+    listingTitle: string
+    listingId: string
+    price: number
+    condition: string
+    emirate: string
+  }
+) {
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'scootmartae@gmail.com'
+  await sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `New listing pending review: ${data.listingTitle}`,
+    html: baseTemplate(`
+      <p style="margin:0 0 4px;">${badge('New Listing 📋')}</p>
+      <h1 style="margin:12px 0 8px;font-size:22px;color:#09090b;">A new listing needs your review</h1>
+      <p style="margin:0 0 24px;color:#71717a;font-size:15px;"><strong>${data.sellerName}</strong> has submitted a listing for approval.</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #e4e4e7;border-radius:8px;padding:16px;">
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;width:120px;">Listing</td>
+          <td style="padding:6px 16px;font-size:14px;font-weight:600;color:#09090b;">${data.listingTitle}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Price</td>
+          <td style="padding:6px 16px;font-size:14px;color:#09090b;">AED ${data.price.toLocaleString()}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Condition</td>
+          <td style="padding:6px 16px;font-size:14px;color:#09090b;">${data.condition}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Emirate</td>
+          <td style="padding:6px 16px;font-size:14px;color:#09090b;">${data.emirate}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Seller</td>
+          <td style="padding:6px 16px;font-size:14px;"><a href="mailto:${data.sellerEmail}" style="color:#000;">${data.sellerEmail}</a></td>
+        </tr>
+      </table>
+      ${btn('Review in Admin Panel →', `${APP_URL}/admin/listings`)}
+    `),
+  })
+}
+
 export async function sendPayoutReleasedSeller(to: string, listingTitle: string, payout: number) {
   await sendEmail({
     to,

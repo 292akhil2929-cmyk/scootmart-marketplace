@@ -8,10 +8,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { VerifiedBadge, UAETestedBadge, CertifiedUsedBadge, RTABadge, EscrowBadge } from '@/components/shared/VerifiedBadge'
 import { ReviewForm } from '@/components/listings/ReviewForm'
 import { formatPrice, timeAgo, getBatteryColor, getScoreLabel } from '@/lib/utils'
-import { MapPin, Star, Zap, Battery, Shield, Phone, MessageSquare, Package } from 'lucide-react'
+import { MapPin, Star, Zap, Battery, Shield, Phone, MessageSquare, Package, ExternalLink } from 'lucide-react'
 import type { Listing } from '@/types/database'
 import type { Metadata } from 'next'
 import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
+
+const AFFILIATE_LABELS: Record<string, string> = {
+  amazon: 'Amazon.ae',
+  noon: 'Noon',
+  xiaomi: 'Xiaomi UAE Store',
+  carrefour: 'Carrefour UAE',
+  sharaf_dg: 'Sharaf DG',
+  other: 'Retailer',
+}
+function getAffiliateLabel(source?: string) {
+  return source ? (AFFILIATE_LABELS[source] ?? 'Retailer') : 'Retailer'
+}
 
 async function getListing(id: string): Promise<Listing | null> {
   const supabase = await createClient()
@@ -266,43 +278,88 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
         <div className="space-y-4">
           {/* Price card */}
           <div className="rounded-xl border bg-card p-5 sticky top-20">
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-3xl font-bold">{formatPrice(listing.price)}</span>
-              {listing.original_price && (
-                <span className="text-muted-foreground line-through text-sm">{formatPrice(listing.original_price)}</span>
-              )}
-            </div>
-            {listing.condition === 'used' && specs?.battery_health_percent && (
-              <div className={`text-sm font-medium mb-3 ${getBatteryColor(specs.battery_health_percent)}`}>
-                Battery: {specs.battery_health_percent}% health
-              </div>
+
+            {(listing as any).is_affiliate && (listing as any).price_sources?.length > 1 ? (
+              /* ── Price comparison table (Skyscanner style) ── */
+              <>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Compare prices
+                </p>
+                <div className="space-y-2 mb-4">
+                  {((listing as any).price_sources as any[])
+                    .sort((a, b) => a.price - b.price)
+                    .map((src: any, i: number) => (
+                      <a
+                        key={src.platform}
+                        href={src.url}
+                        target="_blank"
+                        rel="noopener noreferrer sponsored"
+                        className={`flex items-center justify-between p-3 rounded-xl border transition-all hover:shadow-md hover:-translate-y-0.5 ${
+                          i === 0 ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white hover:border-neutral-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {i === 0 && <span className="text-[10px] font-bold bg-white text-neutral-900 px-1.5 py-0.5 rounded-full">BEST</span>}
+                          <span className={`text-sm font-semibold ${i === 0 ? 'text-white' : 'text-neutral-900'}`}>{src.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${i === 0 ? 'text-white' : 'text-neutral-900'}`}>AED {src.price.toLocaleString()}</span>
+                          <ExternalLink className={`h-3.5 w-3.5 ${i === 0 ? 'text-white/70' : 'text-neutral-400'}`} />
+                        </div>
+                      </a>
+                    ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground text-center">
+                  ScootMart earns a small commission at no extra cost to you.
+                </p>
+              </>
+            ) : (listing as any).is_affiliate ? (
+              /* ── Single affiliate source ── */
+              <>
+                <div className="flex items-baseline gap-2 mb-4">
+                  <span className="text-3xl font-bold">{formatPrice(listing.price)}</span>
+                  {listing.original_price && <span className="text-muted-foreground line-through text-sm">{formatPrice(listing.original_price)}</span>}
+                </div>
+                <a href={(listing as any).affiliate_url} target="_blank" rel="noopener noreferrer sponsored" className="block">
+                  <Button className="w-full gap-2" size="lg">
+                    <ExternalLink className="h-4 w-4" />
+                    Buy on {getAffiliateLabel((listing as any).affiliate_source)}
+                  </Button>
+                </a>
+                <p className="text-[11px] text-muted-foreground text-center mt-3">
+                  ScootMart earns a small commission at no extra cost to you.
+                </p>
+              </>
+            ) : (
+              /* ── P2P escrow ── */
+              <>
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-3xl font-bold">{formatPrice(listing.price)}</span>
+                  {listing.original_price && <span className="text-muted-foreground line-through text-sm">{formatPrice(listing.original_price)}</span>}
+                </div>
+                {listing.condition === 'used' && specs?.battery_health_percent && (
+                  <div className={`text-sm font-medium mb-3 ${getBatteryColor(specs.battery_health_percent)}`}>Battery: {specs.battery_health_percent}% health</div>
+                )}
+                <div className="space-y-2 mb-4">
+                  <Link href={`/checkout?listing=${listing.id}`}>
+                    <Button className="w-full" size="lg">Buy Now – Escrow Protected</Button>
+                  </Link>
+                  <Link href={listing.seller ? `/messages?listing=${listing.id}&seller=${listing.seller.id}` : '/login'} className="block">
+                    <Button variant="outline" className="w-full gap-2" size="lg">
+                      <MessageSquare className="h-4 w-4" /> Message Seller
+                    </Button>
+                  </Link>
+                </div>
+                <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 p-3 text-xs text-green-800">
+                  <div className="font-semibold mb-1">🔒 Escrow Protected</div>
+                  Money held until you confirm receipt.
+                </div>
+              </>
             )}
-
-            <div className="space-y-2 mb-4">
-              <Link href={`/checkout?listing=${listing.id}`}>
-                <Button className="w-full" size="lg">Buy Now – Escrow Protected</Button>
-              </Link>
-              <Link href={listing.seller ? `/messages?listing=${listing.id}&seller=${listing.seller.id}` : '/login'} className="block">
-                <Button variant="outline" className="w-full gap-2" size="lg">
-                  <MessageSquare className="h-4 w-4" /> Message Seller
-                </Button>
-              </Link>
-            </div>
-
-            <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-3 text-xs text-green-800 dark:text-green-200">
-              <div className="font-semibold mb-1">🔒 ScootMart Escrow Protection</div>
-              Your payment is held securely. Money is only released to the seller after you confirm receipt.
-            </div>
-
-            <div className="mt-3 text-xs text-muted-foreground space-y-1">
-              <div>✓ 7-day inspection window</div>
-              <div>✓ Full refund if item doesn't match listing</div>
-              <div>✓ Dispute resolution support</div>
-            </div>
           </div>
 
           {/* Seller card */}
-          {listing.seller && (
+          {!(listing as any).is_affiliate && listing.seller && (
             <div className="rounded-xl border bg-card p-4">
               <h3 className="font-semibold mb-3">Seller</h3>
               <div className="flex items-center gap-3 mb-3">
@@ -331,14 +388,14 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
           )}
 
           {/* Delivery info */}
-          <div className="rounded-xl border bg-card p-4">
+          {!(listing as any).is_affiliate && <div className="rounded-xl border bg-card p-4">
             <h3 className="font-semibold mb-2 flex items-center gap-2"><Package className="h-4 w-4" /> Delivery Options</h3>
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2"><span>📦</span><span>Seller-arranged delivery (free or negotiated)</span></div>
               <div className="flex items-center gap-2"><span>🚐</span><span>White-glove delivery via Aramex/Fetchr (+AED 150)</span></div>
               <div className="flex items-center gap-2"><span>🏪</span><span>Pickup from seller location</span></div>
             </div>
-          </div>
+          </div>}
         </div>
       </div>
 

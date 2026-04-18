@@ -1,28 +1,38 @@
 import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
 import { OrganizationJsonLd, WebsiteJsonLd } from '@/components/seo/JsonLd'
 import { MinimalNav } from '@/components/shop/MinimalNav'
 import { HeroEcom } from '@/components/shop/HeroEcom'
 import { FeatureStrip } from '@/components/shop/FeatureStrip'
 import { ProductGrid } from '@/components/shop/ProductGrid'
-import { NewsletterBand } from '@/components/shop/NewsletterBand'
 import { SiteFooter } from '@/components/shop/SiteFooter'
+import type { Listing } from '@/types/database'
 
 export const metadata: Metadata = {
-  title: 'Scootmart — Electric Scooters & E-Bikes for the UAE',
+  title: 'ScootMart — Compare Electric Scooters & E-Bikes in UAE',
   description:
-    'Shop verified electric scooters and e-bikes in the UAE. Real specs, transparent pricing, free delivery, 2-year warranty.',
+    'Compare electric scooters from Amazon.ae, Noon, and verified UAE sellers. Real specs, UAE heat range, RTA compliance — all in one place.',
 }
 
-export default function Page() {
+export default async function Page() {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('listings')
+    .select('*, specs:listing_specs(*)')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(12)
+
+  const listings = (data as Listing[]) ?? []
+
   return (
-    <main className="shop-root bg-white text-neutral-900 antialiased">
+    <main className="bg-white text-neutral-900 antialiased">
       <OrganizationJsonLd />
       <WebsiteJsonLd />
       <MinimalNav />
       <HeroEcom />
       <FeatureStrip />
-      <ProductGrid />
-      <NewsletterBand />
+      <ProductGrid listings={listings} />
       <SiteFooter />
     </main>
   )

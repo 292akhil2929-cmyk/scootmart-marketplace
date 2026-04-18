@@ -1,47 +1,40 @@
-'use client'
-// Clean 4-up value props with minimal icons. Revealed on scroll.
+// How it works — 3 simple steps. Clean, no fluff.
 
-import { ShieldCheck, Truck, RotateCcw, Headphones } from 'lucide-react'
-import { useReveal } from './useReveal'
-
-const FEATURES = [
+const STEPS = [
   {
-    icon: Truck,
-    title: 'Free UAE delivery',
-    body: 'Free standard shipping on every order. Next-day in Dubai & Abu Dhabi.',
+    number: '01',
+    title: 'Search',
+    body: 'Type any brand, model, or budget. We search Amazon.ae, Noon, and verified UAE sellers at once.',
   },
   {
-    icon: ShieldCheck,
-    title: '2-year warranty',
-    body: 'Every ride covered by manufacturer warranty plus our 90-day protection.',
+    number: '02',
+    title: 'Compare',
+    body: 'See real UAE specs side by side — actual range in 40°C heat, RTA compliance, IP rating, and price.',
   },
   {
-    icon: RotateCcw,
-    title: '14-day returns',
-    body: 'Not the right fit? Return it within 14 days. No hassle, no restocking fees.',
-  },
-  {
-    icon: Headphones,
-    title: 'Real support',
-    body: 'Talk to a human 7 days a week. Average reply time: under 2 hours.',
+    number: '03',
+    title: 'Buy',
+    body: "Click through to the retailer of your choice. No markup, no middleman — you pay the same price you'd pay direct.",
   },
 ]
 
 export function FeatureStrip() {
-  const ref = useReveal<HTMLDivElement>()
   return (
-    <section id="features" className="bg-white border-y border-neutral-100 py-16 md:py-20">
-      <div ref={ref} className="reveal max-w-7xl mx-auto px-5 md:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
-          {FEATURES.map((f) => (
-            <div key={f.title}>
-              <div className="w-10 h-10 rounded-xl bg-neutral-900/5 flex items-center justify-center mb-4">
-                <f.icon className="w-5 h-5 text-neutral-900" />
+    <section id="features" className="bg-neutral-950 py-16 md:py-20">
+      <div className="max-w-5xl mx-auto px-5 md:px-8">
+        <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500 mb-10">
+          How it works
+        </p>
+        <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+          {STEPS.map(s => (
+            <div key={s.number} className="flex gap-5">
+              <span className="text-3xl font-bold text-neutral-700 tabular-nums leading-none shrink-0 mt-0.5">
+                {s.number}
+              </span>
+              <div>
+                <h3 className="text-base font-semibold text-white mb-2">{s.title}</h3>
+                <p className="text-sm text-neutral-400 leading-relaxed">{s.body}</p>
               </div>
-              <h3 className="text-[15px] font-semibold text-neutral-900 mb-1.5">
-                {f.title}
-              </h3>
-              <p className="text-sm text-neutral-500 leading-relaxed">{f.body}</p>
             </div>
           ))}
         </div>
