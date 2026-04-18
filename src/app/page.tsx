@@ -18,12 +18,15 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('listings')
     .select('*, specs:listing_specs(*)')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(12)
+
+  if (error) console.error('[Homepage] Supabase error:', error)
+  console.log('[Homepage] listings fetched:', data?.length ?? 0)
 
   const listings = (data as Listing[]) ?? []
 

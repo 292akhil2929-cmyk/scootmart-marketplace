@@ -3,8 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { ListingCard } from '@/components/listings/ListingCard'
 import { SearchFilters } from '@/components/listings/SearchFilters'
 import { SaveSearchButton } from '@/components/listings/SaveSearchButton'
+import { MinimalNav } from '@/components/shop/MinimalNav'
+import { SiteFooter } from '@/components/shop/SiteFooter'
 import type { Listing, SearchFilters as Filters } from '@/types/database'
 import type { Metadata } from 'next'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = { title: 'Browse E-Scooters & E-Bikes – UAE Marketplace' }
 
@@ -31,6 +35,8 @@ async function getListings(searchParams: Record<string, string>): Promise<{ list
   if (searchParams.certified_used === 'true') query = query.eq('certified_used', true)
   if (searchParams.rta_compliant === 'true') query = query.eq('rta_compliant', true)
   if (searchParams.uae_tested === 'true') query = query.eq('uae_tested', true)
+  if (searchParams.source) query = query.eq('affiliate_source', searchParams.source)
+  if (searchParams.type === 'p2p') query = query.eq('is_affiliate', false)
 
   const sort = searchParams.sort ?? 'newest'
   if (sort === 'price_asc') query = query.order('price', { ascending: true })
@@ -50,38 +56,42 @@ export default async function BrowsePage({ searchParams }: { searchParams: Promi
   const query = params.q
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold mb-1">
-              {query ? `Results for "${query}"` : 'Browse Electric Scooters & E-Bikes'}
-            </h1>
-            <p className="text-muted-foreground text-sm">{total} listings found in UAE</p>
+    <main className="bg-white text-neutral-900 antialiased min-h-screen flex flex-col">
+      <MinimalNav />
+      <div className="flex-1 max-w-7xl mx-auto w-full px-5 md:px-8 py-8">
+        <div className="mb-6">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold mb-1">
+                {query ? `Results for "${query}"` : 'Browse Electric Scooters & E-Bikes'}
+              </h1>
+              <p className="text-sm text-neutral-500">{total} listings in UAE</p>
+            </div>
+            <Suspense>
+              <SaveSearchButton />
+            </Suspense>
           </div>
+        </div>
+
+        <div className="mb-6">
           <Suspense>
-            <SaveSearchButton />
+            <SearchFilters />
           </Suspense>
         </div>
-      </div>
 
-      <div className="mb-6">
-        <Suspense>
-          <SearchFilters />
-        </Suspense>
+        {listings.length > 0 ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {listings.map(listing => <ListingCard key={listing.id} listing={listing} />)}
+          </div>
+        ) : (
+          <div className="text-center py-24">
+            <div className="text-5xl mb-4">🛴</div>
+            <h3 className="text-lg font-semibold mb-2">No listings found</h3>
+            <p className="text-neutral-500">Try adjusting your filters or search terms</p>
+          </div>
+        )}
       </div>
-
-      {listings.length > 0 ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {listings.map(listing => <ListingCard key={listing.id} listing={listing} />)}
-        </div>
-      ) : (
-        <div className="text-center py-24">
-          <div className="text-5xl mb-4">🛴</div>
-          <h3 className="text-lg font-semibold mb-2">No listings found</h3>
-          <p className="text-muted-foreground">Try adjusting your filters or search terms</p>
-        </div>
-      )}
-    </div>
+      <SiteFooter />
+    </main>
   )
 }
