@@ -6,6 +6,7 @@ import { Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
+import { OAuthButtons } from '@/components/auth/OAuthButtons'
 
 function RegisterForm() {
   const router = useRouter()
@@ -64,6 +65,13 @@ function RegisterForm() {
 
   return (
     <div className="bg-background rounded-2xl border p-6 shadow-sm">
+      <OAuthButtons redirectTo="/" />
+
+      <div className="relative my-4">
+        <div className="absolute inset-0 flex items-center"><div className="w-full border-t" /></div>
+        <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">or</span></div>
+      </div>
+
       {/* Role toggle */}
       <div className="flex rounded-lg border p-1 mb-5">
         {(['buyer', 'seller'] as const).map(r => (
