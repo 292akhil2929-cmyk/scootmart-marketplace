@@ -2,8 +2,8 @@
 // Docs: https://resend.com/docs
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-const FROM = process.env.EMAIL_FROM ?? 'noreply@scootmart.ae'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://scootmart.ae'
+const FROM = process.env.EMAIL_FROM ?? 'ScootMart.ae <noreply@scootmart.ae>'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://scootmart-marketplace.vercel.app'
 
 interface EmailPayload {
   to: string
@@ -11,6 +11,70 @@ interface EmailPayload {
   html: string
 }
 
+// ── Base template wrapper ─────────────────────────────────────────────────────
+function baseTemplate(content: string) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScootMart.ae</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#000;border-radius:12px 12px 0 0;padding:24px 32px;text-align:center;">
+              <a href="${APP_URL}" style="text-decoration:none;">
+                <span style="color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">⚡ ScootMart.ae</span>
+              </a>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background:#fff;padding:32px;border-left:1px solid #e4e4e7;border-right:1px solid #e4e4e7;">
+              ${content}
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#fafafa;border:1px solid #e4e4e7;border-radius:0 0 12px 12px;padding:20px 32px;text-align:center;">
+              <p style="margin:0 0 8px;color:#71717a;font-size:12px;">UAE's #1 Electric Scooter Marketplace</p>
+              <p style="margin:0;color:#a1a1aa;font-size:11px;">
+                <a href="${APP_URL}/legal/privacy" style="color:#a1a1aa;">Privacy Policy</a> &nbsp;·&nbsp;
+                <a href="${APP_URL}/legal/terms" style="color:#a1a1aa;">Terms</a> &nbsp;·&nbsp;
+                <a href="mailto:hello@scootmart.ae" style="color:#a1a1aa;">hello@scootmart.ae</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+function btn(label: string, url: string) {
+  return `<a href="${url}" style="display:inline-block;background:#000;color:#fff;font-weight:600;font-size:14px;padding:12px 24px;border-radius:8px;text-decoration:none;margin-top:20px;">${label}</a>`
+}
+
+function divider() {
+  return `<hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0;" />`
+}
+
+function badge(text: string, color = '#000') {
+  return `<span style="display:inline-block;background:${color};color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px;letter-spacing:0.5px;">${text}</span>`
+}
+
+// ── Send helper ───────────────────────────────────────────────────────────────
 async function sendEmail(payload: EmailPayload) {
   if (!RESEND_API_KEY) {
     console.warn('[Email] RESEND_API_KEY not set – skipping email:', payload.subject)
@@ -27,112 +91,258 @@ async function sendEmail(payload: EmailPayload) {
   }
 }
 
-export async function sendOrderConfirmationBuyer(to: string, orderId: string, listingTitle: string, amount: number) {
+// ── Templates ─────────────────────────────────────────────────────────────────
+
+export async function sendWelcomeEmail(to: string, name: string) {
   await sendEmail({
     to,
-    subject: `Order confirmed – ${listingTitle}`,
-    html: `
-      <h2>Your order is confirmed!</h2>
-      <p>Thank you for your purchase on ScootMart.ae.</p>
-      <p><strong>Item:</strong> ${listingTitle}</p>
-      <p><strong>Amount:</strong> AED ${amount.toLocaleString()}</p>
-      <p>Your payment is held securely in escrow. The seller has been notified to ship your item.</p>
-      <p><a href="${APP_URL}/buyer/orders" style="background:#22c55e;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;">View Order</a></p>
-      <hr/>
-      <p style="color:#666;font-size:12px;">ScootMart.ae – UAE's #1 Electric Scooter Marketplace</p>
-    `,
+    subject: `Welcome to ScootMart.ae, ${name}! 🛴`,
+    html: baseTemplate(`
+      <h1 style="margin:0 0 8px;font-size:24px;color:#09090b;">Welcome, ${name}! 🛴</h1>
+      <p style="margin:0 0 20px;color:#71717a;font-size:15px;">You've joined the UAE's smartest marketplace for electric scooters and e-bikes.</p>
+      ${divider()}
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:10px 0;font-size:14px;color:#3f3f46;">🔒&nbsp; <strong>Escrow-protected</strong> payments on every order</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 0;font-size:14px;color:#3f3f46;">✅&nbsp; All sellers are <strong>verified</strong> (Emirates ID / trade license)</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 0;font-size:14px;color:#3f3f46;">🌡️&nbsp; Real <strong>UAE heat performance</strong> data on every model</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 0;font-size:14px;color:#3f3f46;">🤖&nbsp; <strong>AI scooter expert</strong> — ask anything, 24/7</td>
+        </tr>
+      </table>
+      ${divider()}
+      ${btn('Browse Scooters →', `${APP_URL}/browse`)}
+    `),
   })
 }
 
-export async function sendOrderNotificationSeller(to: string, orderId: string, listingTitle: string, payout: number) {
+export async function sendOrderConfirmationBuyer(
+  to: string,
+  orderId: string,
+  listingTitle: string,
+  amount: number
+) {
   await sendEmail({
     to,
-    subject: `New sale! Ship "${listingTitle}" now`,
-    html: `
-      <h2>Congratulations – you made a sale! 🎉</h2>
-      <p><strong>Item sold:</strong> ${listingTitle}</p>
-      <p><strong>Your payout:</strong> AED ${payout.toLocaleString()} (released after buyer confirms receipt)</p>
-      <p><strong>Action required:</strong> Please ship the item within 3 business days and add a tracking number.</p>
-      <p><a href="${APP_URL}/seller/dashboard" style="background:#22c55e;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;">View in Dashboard</a></p>
-      <hr/>
-      <p style="color:#666;font-size:12px;">ScootMart.ae – UAE's #1 Electric Scooter Marketplace</p>
-    `,
+    subject: `Order confirmed – ${listingTitle}`,
+    html: baseTemplate(`
+      <p style="margin:0 0 4px;">${badge('Order Confirmed')}</p>
+      <h1 style="margin:12px 0 8px;font-size:22px;color:#09090b;">Your payment is secure 🔒</h1>
+      <p style="margin:0 0 24px;color:#71717a;font-size:15px;">Your funds are held in escrow and will only be released once you confirm receipt of your item.</p>
+      ${divider()}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #e4e4e7;border-radius:8px;padding:16px;">
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;width:120px;">Item</td>
+          <td style="padding:6px 16px;font-size:14px;font-weight:600;color:#09090b;">${listingTitle}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Amount paid</td>
+          <td style="padding:6px 16px;font-size:14px;font-weight:600;color:#09090b;">AED ${amount.toLocaleString()}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Order ID</td>
+          <td style="padding:6px 16px;font-size:13px;color:#71717a;font-family:monospace;">${orderId}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Status</td>
+          <td style="padding:6px 16px;">${badge('Awaiting Shipment', '#2563eb')}</td>
+        </tr>
+      </table>
+      ${divider()}
+      <p style="margin:0;color:#71717a;font-size:13px;">The seller has been notified and must ship within <strong>3 business days</strong>. You'll get another email with tracking details.</p>
+      ${btn('Track Your Order →', `${APP_URL}/buyer/orders`)}
+    `),
+  })
+}
+
+export async function sendOrderNotificationSeller(
+  to: string,
+  orderId: string,
+  listingTitle: string,
+  payout: number
+) {
+  await sendEmail({
+    to,
+    subject: `New sale! Ship "${listingTitle}" now 📦`,
+    html: baseTemplate(`
+      <p style="margin:0 0 4px;">${badge('New Sale 🎉')}</p>
+      <h1 style="margin:12px 0 8px;font-size:22px;color:#09090b;">You made a sale!</h1>
+      <p style="margin:0 0 24px;color:#71717a;font-size:15px;">Your payout is waiting in escrow. Ship the item within <strong>3 business days</strong> to trigger your release.</p>
+      ${divider()}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #e4e4e7;border-radius:8px;padding:16px;">
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;width:140px;">Item sold</td>
+          <td style="padding:6px 16px;font-size:14px;font-weight:600;color:#09090b;">${listingTitle}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Your payout</td>
+          <td style="padding:6px 16px;font-size:14px;font-weight:700;color:#16a34a;">AED ${payout.toLocaleString()}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Order ID</td>
+          <td style="padding:6px 16px;font-size:13px;color:#71717a;font-family:monospace;">${orderId}</td>
+        </tr>
+      </table>
+      ${divider()}
+      <p style="margin:0;font-size:14px;color:#3f3f46;"><strong>Action required:</strong> Add a tracking number in your dashboard within 3 business days. Missing this deadline may trigger an automatic refund to the buyer.</p>
+      ${btn('Go to Dashboard →', `${APP_URL}/seller/dashboard`)}
+    `),
   })
 }
 
 export async function sendListingApprovedEmail(to: string, listingTitle: string, listingSlug: string) {
   await sendEmail({
     to,
-    subject: `Your listing is live: ${listingTitle}`,
-    html: `
-      <h2>Your listing is approved and live! ✅</h2>
-      <p><strong>${listingTitle}</strong> is now visible to buyers across the UAE.</p>
-      <p><a href="${APP_URL}/listings/${listingSlug}" style="background:#22c55e;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;">View Listing</a></p>
-      <p>Consider promoting your listing for more visibility.</p>
-      <hr/>
-      <p style="color:#666;font-size:12px;">ScootMart.ae – UAE's #1 Electric Scooter Marketplace</p>
-    `,
+    subject: `Your listing is live: ${listingTitle} ✅`,
+    html: baseTemplate(`
+      <p style="margin:0 0 4px;">${badge('Listing Approved ✅')}</p>
+      <h1 style="margin:12px 0 8px;font-size:22px;color:#09090b;">You're live!</h1>
+      <p style="margin:0 0 24px;color:#71717a;font-size:15px;"><strong>${listingTitle}</strong> is now visible to buyers across the UAE.</p>
+      ${divider()}
+      <p style="margin:0 0 8px;font-size:14px;color:#3f3f46;">Tips to sell faster:</p>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:6px 0;font-size:14px;color:#3f3f46;">📸&nbsp; Add more photos (buyers love 5+ images)</td></tr>
+        <tr><td style="padding:6px 0;font-size:14px;color:#3f3f46;">🏷️&nbsp; Price competitively — check similar listings</td></tr>
+        <tr><td style="padding:6px 0;font-size:14px;color:#3f3f46;">💬&nbsp; Respond to inquiries within 1 hour</td></tr>
+      </table>
+      ${btn('View Your Listing →', `${APP_URL}/listings/${listingSlug}`)}
+    `),
   })
 }
 
-// ── Inquiry emails (for /api/inquiries) ──────────────────────────────────────
-
 export async function sendInquiryToVendor(
   to: string,
-  data: { productName: string; customerName: string; customerEmail: string; customerPhone: string; message: string }
+  data: {
+    productName: string
+    customerName: string
+    customerEmail: string
+    customerPhone: string
+    message: string
+  }
 ) {
   await sendEmail({
     to,
     subject: `New inquiry: ${data.productName}`,
-    html: `
-      <h2>New customer inquiry 📨</h2>
-      <p>Someone is interested in <strong>${data.productName}</strong>.</p>
-      <table style="border-collapse:collapse;width:100%;max-width:480px">
-        <tr><td style="padding:6px 0;color:#666;width:120px">Name</td><td style="padding:6px 0;font-weight:600">${data.customerName}</td></tr>
-        <tr><td style="padding:6px 0;color:#666">Email</td><td style="padding:6px 0"><a href="mailto:${data.customerEmail}">${data.customerEmail}</a></td></tr>
-        <tr><td style="padding:6px 0;color:#666">Phone</td><td style="padding:6px 0"><a href="tel:${data.customerPhone}">${data.customerPhone}</a></td></tr>
-        <tr><td style="padding:6px 0;color:#666;vertical-align:top">Message</td><td style="padding:6px 0">${data.message}</td></tr>
+    html: baseTemplate(`
+      <p style="margin:0 0 4px;">${badge('New Inquiry 📨')}</p>
+      <h1 style="margin:12px 0 8px;font-size:22px;color:#09090b;">Someone's interested!</h1>
+      <p style="margin:0 0 24px;color:#71717a;font-size:15px;">A customer wants to know more about <strong>${data.productName}</strong>. Respond within 24 hours for the best chance of a sale.</p>
+      ${divider()}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #e4e4e7;border-radius:8px;padding:16px;">
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;width:100px;">Name</td>
+          <td style="padding:6px 16px;font-size:14px;font-weight:600;color:#09090b;">${data.customerName}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Email</td>
+          <td style="padding:6px 16px;font-size:14px;"><a href="mailto:${data.customerEmail}" style="color:#000;">${data.customerEmail}</a></td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Phone</td>
+          <td style="padding:6px 16px;font-size:14px;"><a href="tel:${data.customerPhone}" style="color:#000;">${data.customerPhone}</a></td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;vertical-align:top;">Message</td>
+          <td style="padding:6px 16px;font-size:14px;color:#3f3f46;font-style:italic;">"${data.message}"</td>
+        </tr>
       </table>
-      <p style="margin-top:20px"><strong>Please respond within 24 hours.</strong></p>
-      <hr/>
-      <p style="color:#666;font-size:12px;">ScootMart.ae – UAE's #1 Electric Scooter Marketplace</p>
-    `,
+      ${btn('Reply via Dashboard →', `${APP_URL}/seller/dashboard`)}
+    `),
   })
 }
 
-export async function sendInquiryConfirmationToCustomer(to: string, data: { productName: string; customerName: string }) {
+export async function sendInquiryConfirmationToCustomer(
+  to: string,
+  data: { productName: string; customerName: string }
+) {
   await sendEmail({
     to,
-    subject: `We received your inquiry — ${data.productName}`,
-    html: `
-      <h2>Inquiry received! ✅</h2>
-      <p>Hi ${data.customerName},</p>
-      <p>Thanks for your interest in the <strong>${data.productName}</strong>.</p>
-      <p>A vendor will reach out to you within <strong>24 hours</strong> to discuss availability, pricing, and delivery options.</p>
-      <p>In the meantime, feel free to browse more scooters:</p>
-      <p><a href="${APP_URL}/scooters" style="background:#111315;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">Browse all scooters →</a></p>
-      <hr/>
-      <p style="color:#666;font-size:12px;">ScootMart.ae · Dubai, UAE · <a href="mailto:hello@scootmart.ae">hello@scootmart.ae</a></p>
-    `,
+    subject: `We got your inquiry — ${data.productName}`,
+    html: baseTemplate(`
+      <h1 style="margin:0 0 8px;font-size:22px;color:#09090b;">Inquiry received! ✅</h1>
+      <p style="margin:0 0 24px;color:#71717a;font-size:15px;">Hi ${data.customerName}, thanks for your interest in <strong>${data.productName}</strong>.</p>
+      ${divider()}
+      <p style="margin:0 0 8px;font-size:14px;color:#3f3f46;">What happens next:</p>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:8px 0;font-size:14px;color:#3f3f46;">1️⃣&nbsp; The seller will contact you within <strong>24 hours</strong></td></tr>
+        <tr><td style="padding:8px 0;font-size:14px;color:#3f3f46;">2️⃣&nbsp; Discuss availability, test ride, and delivery options</td></tr>
+        <tr><td style="padding:8px 0;font-size:14px;color:#3f3f46;">3️⃣&nbsp; Purchase securely with <strong>escrow protection</strong></td></tr>
+      </table>
+      ${divider()}
+      <p style="margin:0 0 16px;font-size:14px;color:#71717a;">While you wait, explore more options:</p>
+      ${btn('Browse All Scooters →', `${APP_URL}/browse`)}
+    `),
   })
 }
 
-export async function sendWelcomeEmail(to: string, name: string) {
+export async function sendPasswordResetEmail(to: string, resetLink: string) {
   await sendEmail({
     to,
-    subject: 'Welcome to ScootMart.ae!',
-    html: `
-      <h2>Welcome to ScootMart.ae, ${name}! 🛴</h2>
-      <p>You've joined the UAE's smartest marketplace for electric scooters and e-bikes.</p>
-      <ul>
-        <li>🔒 Every purchase is escrow-protected</li>
-        <li>✅ All sellers are verified</li>
-        <li>🌡️ Real UAE heat performance data</li>
-        <li>🤖 AI assistant to find your perfect ride</li>
-      </ul>
-      <p><a href="${APP_URL}/browse" style="background:#22c55e;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;">Browse Listings</a></p>
-      <hr/>
-      <p style="color:#666;font-size:12px;">ScootMart.ae – UAE's #1 Electric Scooter Marketplace · <a href="${APP_URL}/legal/privacy">Privacy Policy</a></p>
-    `,
+    subject: 'Reset your ScootMart password',
+    html: baseTemplate(`
+      <h1 style="margin:0 0 8px;font-size:22px;color:#09090b;">Reset your password</h1>
+      <p style="margin:0 0 24px;color:#71717a;font-size:15px;">Click the button below to set a new password. This link expires in <strong>1 hour</strong>.</p>
+      ${btn('Reset Password →', resetLink)}
+      ${divider()}
+      <p style="margin:0;font-size:13px;color:#a1a1aa;">If you didn't request this, you can safely ignore this email. Your password won't change.</p>
+    `),
+  })
+}
+
+export async function sendOrderShippedBuyer(
+  to: string,
+  listingTitle: string,
+  trackingNumber: string,
+  carrier: string
+) {
+  await sendEmail({
+    to,
+    subject: `Your scooter is on the way! 🚚 — ${listingTitle}`,
+    html: baseTemplate(`
+      <p style="margin:0 0 4px;">${badge('Shipped 🚚', '#2563eb')}</p>
+      <h1 style="margin:12px 0 8px;font-size:22px;color:#09090b;">Your order is on the way!</h1>
+      <p style="margin:0 0 24px;color:#71717a;font-size:15px;"><strong>${listingTitle}</strong> has been shipped and is heading to you.</p>
+      ${divider()}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #e4e4e7;border-radius:8px;padding:16px;">
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;width:140px;">Carrier</td>
+          <td style="padding:6px 16px;font-size:14px;font-weight:600;color:#09090b;">${carrier}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;">Tracking no.</td>
+          <td style="padding:6px 16px;font-size:14px;font-family:monospace;color:#09090b;">${trackingNumber}</td>
+        </tr>
+      </table>
+      ${divider()}
+      <p style="margin:0;font-size:13px;color:#71717a;">Once you receive your item, please confirm delivery in your orders page so the seller gets paid and your escrow is released.</p>
+      ${btn('Confirm Receipt →', `${APP_URL}/buyer/orders`)}
+    `),
+  })
+}
+
+export async function sendPayoutReleasedSeller(to: string, listingTitle: string, payout: number) {
+  await sendEmail({
+    to,
+    subject: `Payout released — AED ${payout.toLocaleString()} 💸`,
+    html: baseTemplate(`
+      <p style="margin:0 0 4px;">${badge('Payout Released 💸', '#16a34a')}</p>
+      <h1 style="margin:12px 0 8px;font-size:22px;color:#09090b;">Your money is on the way!</h1>
+      <p style="margin:0 0 24px;color:#71717a;font-size:15px;">The buyer confirmed receipt of <strong>${listingTitle}</strong>. Your escrow has been released.</p>
+      ${divider()}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #e4e4e7;border-radius:8px;padding:16px;">
+        <tr>
+          <td style="padding:6px 16px;color:#71717a;font-size:13px;width:120px;">Payout</td>
+          <td style="padding:6px 16px;font-size:18px;font-weight:700;color:#16a34a;">AED ${payout.toLocaleString()}</td>
+        </tr>
+      </table>
+      ${divider()}
+      <p style="margin:0;font-size:13px;color:#71717a;">Funds will arrive in your registered bank account within <strong>3–5 business days</strong>.</p>
+      ${btn('View Payouts →', `${APP_URL}/seller/payouts`)}
+    `),
   })
 }
