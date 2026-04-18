@@ -1,65 +1,56 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { VerifiedBadge, UAETestedBadge, CertifiedUsedBadge, RTABadge, EscrowBadge } from '@/components/shared/VerifiedBadge'
-import { ReviewForm } from '@/components/listings/ReviewForm'
-import { formatPrice, timeAgo, getBatteryColor, getScoreLabel } from '@/lib/utils'
-import { MapPin, Star, Zap, Battery, Shield, Phone, MessageSquare, Package, ExternalLink } from 'lucide-react'
+import { MinimalNav } from '@/components/shop/MinimalNav'
+import { SiteFooter } from '@/components/shop/SiteFooter'
+import { ProductImage } from '@/components/listings/ProductImage'
+import { Zap, Gauge, Weight, Battery, Shield, ArrowLeft, ExternalLink, ShoppingCart } from 'lucide-react'
 import type { Listing } from '@/types/database'
 import type { Metadata } from 'next'
-import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 
-const AFFILIATE_LABELS: Record<string, string> = {
-  amazon: 'Amazon.ae',
-  noon: 'Noon',
-  xiaomi: 'Xiaomi UAE Store',
-  carrefour: 'Carrefour UAE',
-  sharaf_dg: 'Sharaf DG',
-  other: 'Retailer',
-}
-function getAffiliateLabel(source?: string) {
-  return source ? (AFFILIATE_LABELS[source] ?? 'Retailer') : 'Retailer'
+export const dynamic = 'force-dynamic'
+
+const STORE_COLORS: Record<string, string> = {
+  amazon:     'bg-[#FF9900] text-black',
+  noon:       'bg-[#FEEE00] text-black',
+  sharaf_dg:  'bg-[#E31837] text-white',
+  carrefour:  'bg-[#004F9F] text-white',
+  xiaomi:     'bg-[#FF6900] text-white',
+  jumbo:      'bg-[#003087] text-white',
+  virgin:     'bg-[#ED1C24] text-white',
+  lulu:       'bg-[#0068B4] text-white',
+  microless:  'bg-[#222] text-white',
+  other:      'bg-neutral-200 text-neutral-800',
 }
 
 async function getListing(id: string): Promise<Listing | null> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('listings')
-    .select('*, seller:profiles(*), specs:listing_specs(*), inspection:certified_inspections(*), reviews(*)')
+    .select('*, seller:profiles(*), specs:listing_specs(*)')
     .or(`id.eq.${id},slug.eq.${id}`)
     .eq('status', 'active')
     .single()
 
-  if (data) {
-    // Increment view count
-    await supabase.from('listings').update({ view_count: (data as Listing).view_count + 1 }).eq('id', data.id)
-  }
-  return data as Listing | null
-}
+  if (error || !data) return null
 
-async function getSimilar(listing: Listing): Promise<Listing[]> {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('listings')
-    .select('*, seller:profiles(*), specs:listing_specs(*)')
-    .eq('status', 'active')
-    .eq('type', listing.type)
-    .neq('id', listing.id)
-    .limit(4)
-  return (data as Listing[]) ?? []
+  // fire-and-forget view count
+  supabase.from('listings').update({ view_count: (data.view_count ?? 0) + 1 }).eq('id', data.id)
+
+  return data as Listing
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('listings').select('title,description,images').or(`id.eq.${id},slug.eq.${id}`).single()
+  const { data } = await supabase
+    .from('listings')
+    .select('title,description,images')
+    .or(`id.eq.${id},slug.eq.${id}`)
+    .single()
   if (!data) return {}
   return {
-    title: data.title,
+    title: `${data.title} — ScootMart UAE`,
     description: data.description ?? undefined,
     openGraph: { images: data.images?.[0] ? [data.images[0]] : [] },
   }
@@ -70,355 +61,217 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
   const listing = await getListing(id)
   if (!listing) notFound()
 
-  const similar = await getSimilar(listing)
   const specs = listing.specs
-  const inspection = listing.inspection as unknown as typeof listing.inspection extends Array<infer T> ? T : typeof listing.inspection
-  const reviews = (listing.reviews as unknown as typeof listing.reviews) ?? []
-
-  // Check if current user can leave a review (completed order, no existing review)
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  let canReview = false
-  if (user) {
-    const { data: completedOrder } = await supabase
-      .from('orders')
-      .select('id')
-      .eq('listing_id', listing.id)
-      .eq('buyer_id', user.id)
-      .eq('status', 'completed')
-      .single()
-    if (completedOrder) {
-      const { data: existingReview } = await supabase
-        .from('reviews')
-        .select('id')
-        .eq('listing_id', listing.id)
-        .eq('reviewer_id', user.id)
-        .single()
-      canReview = !existingReview
-    }
-  }
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://scootmart-marketplace.vercel.app'
-  const avgRating = reviews.length
-    ? reviews.reduce((sum: number, r: any) => sum + (r.rating ?? 0), 0) / reviews.length
-    : undefined
+  const priceSources: any[] = ((listing as any).price_sources ?? []).sort((a: any, b: any) => a.price - b.price)
+  const isAffiliate = (listing as any).is_affiliate
+  const discount = listing.original_price
+    ? Math.round(((listing.original_price - listing.price) / listing.original_price) * 100)
+    : 0
 
   return (
-    <>
-      <ProductJsonLd
-        id={listing.id}
-        title={listing.title}
-        description={listing.description ?? undefined}
-        image={listing.images?.[0]}
-        price={listing.price}
-        condition={listing.condition}
-        brand={listing.brand ?? undefined}
-        url={`${appUrl}/listings/${listing.slug ?? listing.id}`}
-        rating={avgRating}
-        reviewCount={reviews.length || undefined}
-      />
-      <BreadcrumbJsonLd items={[
-        { name: 'Home', url: appUrl },
-        { name: 'Browse', url: `${appUrl}/browse` },
-        { name: listing.title, url: `${appUrl}/listings/${listing.slug ?? listing.id}` },
-      ]} />
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left: Images + Details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Image gallery */}
-          <div className="grid grid-cols-4 gap-2">
-            <div className="col-span-4 aspect-video relative rounded-xl overflow-hidden bg-muted">
-              {listing.images?.[0] ? (
-                <Image src={listing.images[0]} alt={listing.title} fill className="object-cover" sizes="100vw" priority />
-              ) : (
-                <div className="flex items-center justify-center h-full text-5xl">🛴</div>
+    <main className="bg-white text-neutral-900 antialiased min-h-screen">
+      <MinimalNav />
+
+      <div className="max-w-6xl mx-auto px-5 md:px-8 py-8">
+        {/* Breadcrumb */}
+        <Link href="/browse" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to browse
+        </Link>
+
+        <div className="grid lg:grid-cols-5 gap-10">
+          {/* LEFT: image + specs */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Main image */}
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-100">
+              <ProductImage src={listing.images?.[0]} alt={listing.title} />
+              {discount > 5 && (
+                <span className="absolute top-3 right-3 text-xs font-bold bg-red-500 text-white px-2.5 py-1 rounded-full">
+                  -{discount}%
+                </span>
+              )}
+              {listing.rta_compliant && (
+                <span className="absolute bottom-3 left-3 text-xs font-semibold bg-green-500 text-white px-2.5 py-1 rounded-full">
+                  ✓ RTA Compliant
+                </span>
               )}
             </div>
-            {listing.images?.slice(1, 4).map((img, i) => (
-              <div key={i} className="aspect-video relative rounded-lg overflow-hidden bg-muted">
-                <Image src={img} alt={`${listing.title} ${i + 2}`} fill className="object-cover" sizes="25vw" />
-              </div>
-            ))}
-          </div>
 
-          {/* Badges */}
-          <div className="flex flex-wrap gap-2">
-            {listing.uae_tested && <UAETestedBadge />}
-            {listing.certified_used && <CertifiedUsedBadge />}
-            {listing.rta_compliant && <RTABadge />}
-            <EscrowBadge />
-          </div>
-
-          {/* Title */}
-          <div>
-            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{listing.brand} · {listing.condition === 'new' ? 'New' : 'Used'}</p>
-            <h1 className="text-2xl md:text-3xl font-bold mt-1">{listing.title}</h1>
-            <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-              {listing.location_emirate && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{listing.location_emirate}{listing.location_area ? `, ${listing.location_area}` : ''}</span>}
-              <span>{timeAgo(listing.created_at)}</span>
-              <span>{listing.view_count} views</span>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <Tabs defaultValue="specs">
-            <TabsList>
-              <TabsTrigger value="specs">Specs</TabsTrigger>
-              <TabsTrigger value="description">Description</TabsTrigger>
-              {listing.certified_used && <TabsTrigger value="inspection">Inspection Report</TabsTrigger>}
-              <TabsTrigger value="reviews">Reviews ({(reviews as unknown[]).length})</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="specs" className="mt-4">
-              {specs ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {[
-                    { label: 'Claimed Range', value: specs.range_km ? `${specs.range_km} km` : null, icon: '📏' },
-                    { label: '🌡️ UAE Heat Range', value: specs.range_km_uae_heat ? `${specs.range_km_uae_heat} km` : null, icon: '🔥', highlight: true },
-                    { label: 'Top Speed', value: specs.top_speed_kmh ? `${specs.top_speed_kmh} km/h` : null, icon: '⚡' },
-                    { label: 'Motor Power', value: specs.motor_watts ? `${specs.motor_watts}W` : null, icon: '🔌' },
-                    { label: 'Battery', value: specs.battery_kwh ? `${specs.battery_kwh} kWh` : null, icon: '🔋' },
-                    { label: 'Charging Time', value: specs.charging_time_hours ? `${specs.charging_time_hours}h` : null, icon: '⏱️' },
-                    { label: 'Weight', value: specs.weight_kg ? `${specs.weight_kg} kg` : null, icon: '⚖️' },
-                    { label: 'Max Rider Weight', value: specs.max_rider_weight_kg ? `${specs.max_rider_weight_kg} kg` : null, icon: '👤' },
-                    { label: 'Hill Climb', value: specs.hill_climb_degrees ? `${specs.hill_climb_degrees}°` : null, icon: '⛰️' },
-                    { label: 'IP Rating', value: specs.ip_rating, icon: '💧' },
-                    { label: 'Battery Health', value: specs.battery_health_percent ? `${specs.battery_health_percent}%` : null, icon: '🔋' },
-                    { label: 'Warranty', value: specs.warranty_months ? `${specs.warranty_months} months` : null, icon: '🛡️' },
-                  ].filter(s => s.value).map(spec => (
-                    <div key={spec.label} className={`rounded-lg border p-3 ${spec.highlight ? 'border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20' : ''}`}>
-                      <div className="text-xs text-muted-foreground mb-0.5">{spec.icon} {spec.label}</div>
-                      <div className="font-semibold text-sm">{spec.value}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : <p className="text-muted-foreground">No specs available.</p>}
-
-              {specs?.heat_performance_note && (
-                <div className="mt-4 rounded-lg bg-orange-50 border border-orange-200 p-4 dark:bg-orange-900/20 dark:border-orange-800">
-                  <p className="text-sm font-semibold text-orange-800 dark:text-orange-200 mb-1">🌡️ UAE Heat Performance Note</p>
-                  <p className="text-sm text-orange-700 dark:text-orange-300">{specs.heat_performance_note}</p>
-                </div>
-              )}
-              {specs?.connectivity && specs.connectivity.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {specs.connectivity.map(c => <Badge key={c} variant="secondary">{c}</Badge>)}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="description" className="mt-4">
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{listing.description ?? 'No description provided.'}</p>
-            </TabsContent>
-
-            {listing.certified_used && (
-              <TabsContent value="inspection" className="mt-4">
-                {inspection ? (
-                  <div className="space-y-4">
-                    <div className="rounded-xl border p-4 bg-purple-50 dark:bg-purple-900/20">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold">Certified Inspection Report</h3>
-                        <Badge variant="success">Score: {(inspection as any).overall_score}/10 – {getScoreLabel((inspection as any).overall_score)}</Badge>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                        {[
-                          { label: 'Battery Health', value: `${(inspection as any).battery_health_percent}%`, color: getBatteryColor((inspection as any).battery_health_percent) },
-                          { label: 'Motor', value: (inspection as any).motor_condition },
-                          { label: 'Brakes', value: (inspection as any).brakes_condition },
-                          { label: 'Tires', value: (inspection as any).tires_condition },
-                          { label: 'Electronics', value: (inspection as any).electronics_ok ? 'OK' : 'Issues' },
-                          { label: 'Frame Damage', value: (inspection as any).frame_damage ? 'Yes' : 'None' },
-                        ].map(item => (
-                          <div key={item.label} className="rounded-lg bg-background border p-2">
-                            <div className="text-xs text-muted-foreground">{item.label}</div>
-                            <div className={`font-semibold capitalize ${item.color ?? ''}`}>{item.value}</div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-3 text-xs text-muted-foreground">
-                        Inspected by <strong>{(inspection as any).mechanic_name}</strong>{(inspection as any).mechanic_shop ? ` at ${(inspection as any).mechanic_shop}` : ''}
-                        {(inspection as any).is_platform_partner && <span className="ml-2 text-purple-600 font-medium">✓ ScootMart Partner</span>}
-                      </div>
-                      {(inspection as any).platform_warranty && (
-                        <div className="mt-3 rounded-lg bg-green-100 dark:bg-green-900/30 p-3 text-sm text-green-800 dark:text-green-200">
-                          🛡️ <strong>{(inspection as any).warranty_months}-month platform warranty included</strong> — ScootMart backs this listing.
-                        </div>
-                      )}
-                    </div>
+            {/* Extra images */}
+            {listing.images && listing.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-2">
+                {listing.images.slice(1, 5).map((img, i) => (
+                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-neutral-100">
+                    <ProductImage src={img} alt={`${listing.title} ${i + 2}`} />
                   </div>
-                ) : <p className="text-muted-foreground">Inspection report not available.</p>}
-              </TabsContent>
+                ))}
+              </div>
             )}
 
-            <TabsContent value="reviews" className="mt-4 space-y-4" id="reviews">
-              {canReview && <ReviewForm listingId={listing.id} />}
-              {(reviews as any[]).length === 0 && !canReview && (
-                <p className="text-center text-muted-foreground py-8">No reviews yet. Be the first to review after your purchase.</p>
+            {/* Title + brand */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-1">{listing.brand}</p>
+              <h1 className="text-2xl md:text-3xl font-bold leading-tight">{listing.title}</h1>
+              {listing.description && (
+                <p className="text-neutral-500 text-sm mt-3 leading-relaxed">{listing.description}</p>
               )}
-              {(reviews as any[]).map((review: any) => (
-                <div key={review.id} className="border rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex">{[1,2,3,4,5].map(s => <Star key={s} className={`h-4 w-4 ${s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />)}</div>
-                    <span className="font-medium text-sm">{review.title}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{review.comment}</p>
-                  {review.uae_tested_tags?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {review.uae_tested_tags.map((tag: string) => <Badge key={tag} variant="secondary" className="text-xs">{tag.replace(/_/g, ' ')}</Badge>)}
+            </div>
+
+            {/* Key specs grid */}
+            {specs && (
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-400 mb-3">Specifications</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {specs.range_km_uae_heat && (
+                    <div className="rounded-xl border border-orange-100 bg-orange-50 p-3">
+                      <p className="text-[11px] font-medium text-orange-500 uppercase tracking-wide mb-0.5">UAE Range</p>
+                      <p className="text-lg font-bold text-orange-700">{specs.range_km_uae_heat} km</p>
+                      <p className="text-[10px] text-orange-400">in 45°C heat</p>
+                    </div>
+                  )}
+                  {specs.range_km && (
+                    <div className="rounded-xl border bg-neutral-50 p-3">
+                      <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wide mb-0.5">Claimed Range</p>
+                      <p className="text-lg font-bold">{specs.range_km} km</p>
+                    </div>
+                  )}
+                  {specs.top_speed_kmh && (
+                    <div className="rounded-xl border bg-neutral-50 p-3">
+                      <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wide mb-0.5">Top Speed</p>
+                      <p className="text-lg font-bold">{specs.top_speed_kmh} km/h</p>
+                    </div>
+                  )}
+                  {specs.motor_watts && (
+                    <div className="rounded-xl border bg-neutral-50 p-3">
+                      <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wide mb-0.5">Motor</p>
+                      <p className="text-lg font-bold">{specs.motor_watts} W</p>
+                    </div>
+                  )}
+                  {specs.weight_kg && (
+                    <div className="rounded-xl border bg-neutral-50 p-3">
+                      <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wide mb-0.5">Weight</p>
+                      <p className="text-lg font-bold">{specs.weight_kg} kg</p>
+                    </div>
+                  )}
+                  {specs.ip_rating && (
+                    <div className="rounded-xl border bg-blue-50 border-blue-100 p-3">
+                      <p className="text-[11px] font-medium text-blue-400 uppercase tracking-wide mb-0.5">Water Rating</p>
+                      <p className="text-lg font-bold text-blue-700">{specs.ip_rating}</p>
+                    </div>
+                  )}
+                  {specs.charging_time_hours && (
+                    <div className="rounded-xl border bg-neutral-50 p-3">
+                      <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wide mb-0.5">Charge Time</p>
+                      <p className="text-lg font-bold">{specs.charging_time_hours}h</p>
+                    </div>
+                  )}
+                  {specs.warranty_months && (
+                    <div className="rounded-xl border bg-neutral-50 p-3">
+                      <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wide mb-0.5">Warranty</p>
+                      <p className="text-lg font-bold">{specs.warranty_months} mo</p>
+                    </div>
+                  )}
+                  {specs.max_rider_weight_kg && (
+                    <div className="rounded-xl border bg-neutral-50 p-3">
+                      <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wide mb-0.5">Max Rider</p>
+                      <p className="text-lg font-bold">{specs.max_rider_weight_kg} kg</p>
                     </div>
                   )}
                 </div>
-              ))}
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Right: Price + Seller + CTA */}
-        <div className="space-y-4">
-          {/* Price card */}
-          <div className="rounded-xl border bg-card p-5 sticky top-20">
-
-            {(listing as any).is_affiliate && (listing as any).price_sources?.length > 1 ? (
-              /* ── Price comparison table (Skyscanner style) ── */
-              <>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                  Compare prices
-                </p>
-                <div className="space-y-2 mb-4">
-                  {((listing as any).price_sources as any[])
-                    .sort((a, b) => a.price - b.price)
-                    .map((src: any, i: number) => (
-                      <a
-                        key={src.platform}
-                        href={src.url}
-                        target="_blank"
-                        rel="noopener noreferrer sponsored"
-                        className={`flex items-center justify-between p-3 rounded-xl border transition-all hover:shadow-md hover:-translate-y-0.5 ${
-                          i === 0 ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white hover:border-neutral-400'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {i === 0 && <span className="text-[10px] font-bold bg-white text-neutral-900 px-1.5 py-0.5 rounded-full">BEST</span>}
-                          <span className={`text-sm font-semibold ${i === 0 ? 'text-white' : 'text-neutral-900'}`}>{src.label}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-bold ${i === 0 ? 'text-white' : 'text-neutral-900'}`}>AED {src.price.toLocaleString()}</span>
-                          <ExternalLink className={`h-3.5 w-3.5 ${i === 0 ? 'text-white/70' : 'text-neutral-400'}`} />
-                        </div>
-                      </a>
-                    ))}
-                </div>
-                <p className="text-[11px] text-muted-foreground text-center">
-                  ScootMart earns a small commission at no extra cost to you.
-                </p>
-              </>
-            ) : (listing as any).is_affiliate ? (
-              /* ── Single affiliate source ── */
-              <>
-                <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-3xl font-bold">{formatPrice(listing.price)}</span>
-                  {listing.original_price && <span className="text-muted-foreground line-through text-sm">{formatPrice(listing.original_price)}</span>}
-                </div>
-                <a href={(listing as any).affiliate_url} target="_blank" rel="noopener noreferrer sponsored" className="block">
-                  <Button className="w-full gap-2" size="lg">
-                    <ExternalLink className="h-4 w-4" />
-                    Buy on {getAffiliateLabel((listing as any).affiliate_source)}
-                  </Button>
-                </a>
-                <p className="text-[11px] text-muted-foreground text-center mt-3">
-                  ScootMart earns a small commission at no extra cost to you.
-                </p>
-              </>
-            ) : (
-              /* ── P2P escrow ── */
-              <>
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-3xl font-bold">{formatPrice(listing.price)}</span>
-                  {listing.original_price && <span className="text-muted-foreground line-through text-sm">{formatPrice(listing.original_price)}</span>}
-                </div>
-                {listing.condition === 'used' && specs?.battery_health_percent && (
-                  <div className={`text-sm font-medium mb-3 ${getBatteryColor(specs.battery_health_percent)}`}>Battery: {specs.battery_health_percent}% health</div>
-                )}
-                <div className="space-y-2 mb-4">
-                  <Link href={`/checkout?listing=${listing.id}`}>
-                    <Button className="w-full" size="lg">Buy Now – Escrow Protected</Button>
-                  </Link>
-                  <Link href={listing.seller ? `/messages?listing=${listing.id}&seller=${listing.seller.id}` : '/login'} className="block">
-                    <Button variant="outline" className="w-full gap-2" size="lg">
-                      <MessageSquare className="h-4 w-4" /> Message Seller
-                    </Button>
-                  </Link>
-                </div>
-                <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 p-3 text-xs text-green-800">
-                  <div className="font-semibold mb-1">🔒 Escrow Protected</div>
-                  Money held until you confirm receipt.
-                </div>
-              </>
+              </div>
             )}
           </div>
 
-          {/* Seller card */}
-          {!(listing as any).is_affiliate && listing.seller && (
-            <div className="rounded-xl border bg-card p-4">
-              <h3 className="font-semibold mb-3">Seller</h3>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
-                  {(listing.seller.display_name ?? listing.seller.full_name ?? '?')[0]}
+          {/* RIGHT: price comparison */}
+          <div className="lg:col-span-2">
+            <div className="sticky top-6 space-y-4">
+              {/* Best price header */}
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-1">Starting from</p>
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-3xl font-bold">
+                    AED {(priceSources[0]?.price ?? listing.price).toLocaleString()}
+                  </span>
+                  {listing.original_price && (
+                    <span className="text-sm text-neutral-400 line-through">
+                      AED {listing.original_price.toLocaleString()}
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <div className="font-medium">{listing.seller.display_name ?? listing.seller.full_name}</div>
-                  {listing.seller.verified_badge && <VerifiedBadge />}
-                </div>
+                {priceSources.length > 0 && (
+                  <p className="text-xs text-neutral-400">Cheapest: {priceSources[0]?.label}</p>
+                )}
               </div>
-              {listing.seller.rating > 0 && (
-                <div className="flex items-center gap-1 text-sm mb-2">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">{listing.seller.rating.toFixed(1)}</span>
-                  <span className="text-muted-foreground">({listing.seller.rating_count} reviews)</span>
-                </div>
-              )}
-              {listing.seller.location_emirate && (
-                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                  <MapPin className="h-3.5 w-3.5" />{listing.seller.location_emirate}
-                </div>
-              )}
-              {listing.seller.bio && <p className="text-xs text-muted-foreground">{listing.seller.bio}</p>}
-            </div>
-          )}
 
-          {/* Delivery info */}
-          {!(listing as any).is_affiliate && <div className="rounded-xl border bg-card p-4">
-            <h3 className="font-semibold mb-2 flex items-center gap-2"><Package className="h-4 w-4" /> Delivery Options</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2"><span>📦</span><span>Seller-arranged delivery (free or negotiated)</span></div>
-              <div className="flex items-center gap-2"><span>🚐</span><span>White-glove delivery via Aramex/Fetchr (+AED 150)</span></div>
-              <div className="flex items-center gap-2"><span>🏪</span><span>Pickup from seller location</span></div>
+              {/* Price comparison table */}
+              {priceSources.length > 0 && (
+                <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden shadow-sm">
+                  <div className="px-5 py-3 border-b border-neutral-100 flex items-center justify-between">
+                    <h2 className="text-sm font-bold">Compare Prices</h2>
+                    <span className="text-xs text-neutral-400">{priceSources.length} stores</span>
+                  </div>
+                  <div className="divide-y divide-neutral-100">
+                    {priceSources.map((src: any, i: number) => (
+                      <div
+                        key={src.platform}
+                        className={`flex items-center justify-between px-5 py-3.5 ${i === 0 ? 'bg-neutral-950' : 'bg-white hover:bg-neutral-50'} transition-colors`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          {i === 0 && (
+                            <span className="text-[10px] font-bold bg-white text-neutral-900 px-1.5 py-0.5 rounded-full shrink-0">
+                              BEST
+                            </span>
+                          )}
+                          <span className={`text-sm font-semibold ${i === 0 ? 'text-white' : 'text-neutral-800'}`}>
+                            {src.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`font-bold text-sm ${i === 0 ? 'text-white' : 'text-neutral-900'}`}>
+                            AED {src.price.toLocaleString()}
+                          </span>
+                          <a
+                            href={src.url ?? '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
+                              i === 0
+                                ? 'bg-white text-neutral-900 hover:bg-neutral-100'
+                                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                            }`}
+                          >
+                            <ShoppingCart className="w-3 h-3" /> Shop
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="px-5 py-3 border-t border-neutral-100 bg-neutral-50">
+                    <p className="text-[11px] text-neutral-400 text-center">
+                      Prices updated regularly · Affiliate links coming soon
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2">
+                {listing.rta_compliant && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-green-50 text-green-700 border border-green-200 rounded-full px-3 py-1.5">
+                    <Shield className="w-3.5 h-3.5" /> RTA Compliant
+                  </span>
+                )}
+                {listing.uae_tested && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200 rounded-full px-3 py-1.5">
+                    🌡️ UAE Tested
+                  </span>
+                )}
+              </div>
             </div>
-          </div>}
+          </div>
         </div>
       </div>
 
-      {/* Similar listings */}
-      {similar.length > 0 && (
-        <section className="mt-16">
-          <h2 className="text-xl font-bold mb-5">Similar Listings</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {similar.map(l => (
-              <Link key={l.id} href={`/listings/${l.slug ?? l.id}`} className="rounded-xl border overflow-hidden hover:shadow-md transition-shadow">
-                <div className="aspect-video relative bg-muted">
-                  {l.images?.[0] && <Image src={l.images[0]} alt={l.title} fill className="object-cover" sizes="25vw" />}
-                </div>
-                <div className="p-3">
-                  <p className="font-semibold text-sm line-clamp-1">{l.title}</p>
-                  <p className="text-primary font-bold">{formatPrice(l.price)}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-    </div>
-    </>
+      <SiteFooter />
+    </main>
   )
 }

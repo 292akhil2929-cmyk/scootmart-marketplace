@@ -23,7 +23,7 @@ export default async function Page() {
     .select('*, specs:listing_specs(*)')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
-    .limit(12)
+    .limit(50)
 
   if (error) console.error('[Homepage] Supabase error:', error)
   console.log('[Homepage] listings fetched:', data?.length ?? 0)
