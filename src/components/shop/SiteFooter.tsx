@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Mail, Globe } from 'lucide-react'
+import { Mail, Globe, Heart } from 'lucide-react'
 
 const COLS = [
   {
@@ -86,9 +86,28 @@ export function SiteFooter() {
           ))}
         </div>
 
+        {/* About Us */}
+        <div className="mb-10 rounded-2xl bg-neutral-50 border border-neutral-100 px-7 py-6 flex flex-col md:flex-row gap-6 items-start">
+          <div className="shrink-0 text-3xl select-none">⚡</div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-400 mb-2 flex items-center gap-1.5">
+              <Heart className="w-3 h-3 text-red-400 fill-red-400" /> Our Story
+            </p>
+            <p className="text-sm text-neutral-700 leading-relaxed max-w-2xl">
+              ScootMart was born in a college dorm room. We're two students from the UAE who got tired of spending hours jumping between Amazon, Noon, and random seller WhatsApp groups just to find a decent scooter at a fair price. We thought — <em>why isn't there a Skyscanner for this?</em>
+            </p>
+            <p className="text-sm text-neutral-600 leading-relaxed max-w-2xl mt-2">
+              We have no investors, no office, no guarantee this works. Just two laptops, a shared dream, and a genuine belief that sustainable transport in the UAE deserves better than a Google search. Every listing you browse, every comparison you make — it means everything to us.
+            </p>
+            <p className="text-sm text-neutral-500 mt-3 font-medium">
+              If you love what we're building, tell a friend. That's all we ask. 🛴
+            </p>
+          </div>
+        </div>
+
         <div className="pt-8 border-t border-neutral-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <p className="text-xs text-neutral-400">
-            © {new Date().getFullYear()} ScootMart.ae · UAE · All rights reserved
+            © {new Date().getFullYear()} ScootMart.ae · Built with ❤️ in the UAE
           </p>
           <div className="flex items-center gap-4">
             <a href="mailto:scootmartae@gmail.com" className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors">
