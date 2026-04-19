@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Mail, Globe } from 'lucide-react'
 
 const COLS = [
   {
@@ -38,11 +39,32 @@ export function SiteFooter() {
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-white text-sm font-bold">S</div>
-              <span className="font-bold tracking-tight text-neutral-900 text-lg">ScootMart</span>
+              <span className="font-bold tracking-tight text-neutral-900 text-lg">ScootMart.ae</span>
             </Link>
             <p className="text-sm text-neutral-500 leading-relaxed max-w-xs mb-4">
-              UAE's e-scooter comparison platform. We aggregate listings from Amazon.ae, Noon, and verified local sellers so you can find the best deal in one place.
+              UAE's e-scooter &amp; e-bike comparison platform. Find the best deal across Amazon.ae, Noon, and verified local sellers — all in one place.
             </p>
+
+            {/* Contact links */}
+            <div className="space-y-2 mb-4">
+              <a
+                href="mailto:scootmartae@gmail.com"
+                className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors group"
+              >
+                <Mail className="w-4 h-4 text-neutral-400 group-hover:text-neutral-700 shrink-0" />
+                scootmartae@gmail.com
+              </a>
+              <a
+                href="https://scootmart.ae"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors group"
+              >
+                <Globe className="w-4 h-4 text-neutral-400 group-hover:text-neutral-700 shrink-0" />
+                scootmart.ae
+              </a>
+            </div>
+
             <p className="text-xs text-neutral-400">
               We earn affiliate commissions on some links — at no extra cost to you.
             </p>
@@ -66,11 +88,17 @@ export function SiteFooter() {
 
         <div className="pt-8 border-t border-neutral-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <p className="text-xs text-neutral-400">
-            © {new Date().getFullYear()} ScootMart · UAE · All rights reserved
+            © {new Date().getFullYear()} ScootMart.ae · UAE · All rights reserved
           </p>
-          <p className="text-xs text-neutral-400">
-            Questions? <a href="mailto:hello@scootmart.com" className="hover:text-neutral-900 transition-colors">hello@scootmart.com</a>
-          </p>
+          <div className="flex items-center gap-4">
+            <a href="mailto:scootmartae@gmail.com" className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors">
+              scootmartae@gmail.com
+            </a>
+            <span className="text-neutral-200">·</span>
+            <a href="https://scootmart.ae" target="_blank" rel="noopener noreferrer" className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors">
+              scootmart.ae
+            </a>
+          </div>
         </div>
       </div>
     </footer>

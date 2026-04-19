@@ -392,3 +392,156 @@ export async function sendPayoutReleasedSeller(to: string, listingTitle: string,
     `),
   })
 }
+
+// ── Admin Cron Report ─────────────────────────────────────────────────────────
+
+export interface CronReportData {
+  runAt: string           // ISO timestamp
+  intervalHours: number
+  totalListings: number
+  activeListings: number
+  affiliateListings: number
+  updatedThisRun: number
+  // Click stats (empty if table not yet created)
+  totalClicksPeriod: number
+  clicksByPlatform: { platform: string; clicks: number }[]
+  topListings: { title: string; clicks: number; platform: string }[]
+  // View stats from listings table
+  totalViews: number
+  topViewedListings: { title: string; views: number }[]
+}
+
+export async function sendCronReport(data: CronReportData) {
+  const ADMIN = process.env.ADMIN_EMAIL ?? 'scootmartae@gmail.com'
+  const d = data
+  const dateStr = new Date(d.runAt).toLocaleString('en-AE', {
+    timeZone: 'Asia/Dubai',
+    dateStyle: 'full',
+    timeStyle: 'short',
+  })
+
+  const platformRows = d.clicksByPlatform.length > 0
+    ? d.clicksByPlatform.map(p => `
+        <tr>
+          <td style="padding:8px 16px;font-size:14px;color:#09090b;border-bottom:1px solid #f4f4f5;">${p.platform.toUpperCase()}</td>
+          <td style="padding:8px 16px;font-size:14px;font-weight:700;color:#09090b;text-align:right;border-bottom:1px solid #f4f4f5;">${p.clicks.toLocaleString()}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="2" style="padding:12px 16px;font-size:13px;color:#a1a1aa;text-align:center;">
+        No click data yet — run <code>005_affiliate_clicks.sql</code> in Supabase to enable tracking.
+       </td></tr>`
+
+  const topClickRows = d.topListings.length > 0
+    ? d.topListings.slice(0, 5).map((l, i) => `
+        <tr>
+          <td style="padding:8px 16px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;">${i + 1}</td>
+          <td style="padding:8px 16px;font-size:14px;color:#09090b;border-bottom:1px solid #f4f4f5;">${l.title}</td>
+          <td style="padding:8px 16px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;">${l.platform}</td>
+          <td style="padding:8px 16px;font-size:14px;font-weight:700;color:#09090b;text-align:right;border-bottom:1px solid #f4f4f5;">${l.clicks}</td>
+        </tr>`).join('')
+    : ''
+
+  const topViewRows = d.topViewedListings.slice(0, 5).map((l, i) => `
+      <tr>
+        <td style="padding:8px 16px;font-size:13px;color:#71717a;border-bottom:1px solid #f4f4f5;">${i + 1}</td>
+        <td style="padding:8px 16px;font-size:14px;color:#09090b;border-bottom:1px solid #f4f4f5;">${l.title}</td>
+        <td style="padding:8px 16px;font-size:14px;font-weight:700;color:#09090b;text-align:right;border-bottom:1px solid #f4f4f5;">${l.views.toLocaleString()}</td>
+      </tr>`).join('')
+
+  const statCard = (label: string, value: string | number, sub?: string, color = '#09090b') =>
+    `<td style="padding:0 8px 0 0;width:33%;">
+      <div style="background:#fafafa;border:1px solid #e4e4e7;border-radius:10px;padding:14px 16px;">
+        <p style="margin:0 0 4px;font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:0.5px;">${label}</p>
+        <p style="margin:0;font-size:22px;font-weight:800;color:${color};">${value}</p>
+        ${sub ? `<p style="margin:4px 0 0;font-size:11px;color:#a1a1aa;">${sub}</p>` : ''}
+      </div>
+    </td>`
+
+  await sendEmail({
+    to: ADMIN,
+    subject: `📊 ScootMart Report — ${d.totalClicksPeriod} clicks · ${d.activeListings} live listings`,
+    html: baseTemplate(`
+      <p style="margin:0 0 4px;">${badge('Cron Report ⚡')}</p>
+      <h1 style="margin:12px 0 4px;font-size:20px;color:#09090b;">ScootMart.ae — Automated Report</h1>
+      <p style="margin:0 0 24px;font-size:13px;color:#71717a;">${dateStr} (Asia/Dubai) · runs every ${d.intervalHours}h</p>
+
+      <!-- KPI row -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+        <tr>
+          ${statCard('Affiliate Clicks', d.totalClicksPeriod.toLocaleString(), `last ${d.intervalHours}h`, d.totalClicksPeriod > 0 ? '#16a34a' : '#09090b')}
+          ${statCard('Active Listings', d.activeListings, `${d.affiliateListings} affiliate`)}
+          ${statCard('Total Views', d.totalViews.toLocaleString(), 'all time')}
+        </tr>
+      </table>
+
+      <!-- Clicks by platform -->
+      <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:#09090b;text-transform:uppercase;letter-spacing:0.5px;">Clicks by Platform (last ${d.intervalHours}h)</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #e4e4e7;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+        <thead>
+          <tr style="background:#fafafa;">
+            <th style="padding:10px 16px;font-size:11px;color:#71717a;text-align:left;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Platform</th>
+            <th style="padding:10px 16px;font-size:11px;color:#71717a;text-align:right;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Clicks</th>
+          </tr>
+        </thead>
+        <tbody>${platformRows}</tbody>
+      </table>
+
+      ${topClickRows ? `
+      <!-- Top clicked listings -->
+      <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:#09090b;text-transform:uppercase;letter-spacing:0.5px;">Top Clicked Listings (last ${d.intervalHours}h)</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #e4e4e7;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+        <thead>
+          <tr style="background:#fafafa;">
+            <th style="padding:10px 16px;font-size:11px;color:#71717a;font-weight:600;">#</th>
+            <th style="padding:10px 16px;font-size:11px;color:#71717a;font-weight:600;">Listing</th>
+            <th style="padding:10px 16px;font-size:11px;color:#71717a;font-weight:600;">Store</th>
+            <th style="padding:10px 16px;font-size:11px;color:#71717a;text-align:right;font-weight:600;">Clicks</th>
+          </tr>
+        </thead>
+        <tbody>${topClickRows}</tbody>
+      </table>` : ''}
+
+      <!-- Top viewed listings -->
+      <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:#09090b;text-transform:uppercase;letter-spacing:0.5px;">Top Viewed Listings (All Time)</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #e4e4e7;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+        <thead>
+          <tr style="background:#fafafa;">
+            <th style="padding:10px 16px;font-size:11px;color:#71717a;font-weight:600;">#</th>
+            <th style="padding:10px 16px;font-size:11px;color:#71717a;font-weight:600;">Listing</th>
+            <th style="padding:10px 16px;font-size:11px;color:#71717a;text-align:right;font-weight:600;">Views</th>
+          </tr>
+        </thead>
+        <tbody>${topViewRows}</tbody>
+      </table>
+
+      ${divider()}
+
+      <!-- Cron health -->
+      <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:#09090b;text-transform:uppercase;letter-spacing:0.5px;">Cron Health</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border:1px solid #e4e4e7;border-radius:10px;padding:4px 0;">
+        <tr>
+          <td style="padding:8px 16px;font-size:13px;color:#71717a;">Listings updated this run</td>
+          <td style="padding:8px 16px;font-size:14px;font-weight:700;color:#09090b;text-align:right;">${d.updatedThisRun}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 16px;font-size:13px;color:#71717a;">Affiliate links live</td>
+          <td style="padding:8px 16px;font-size:14px;font-weight:700;color:#09090b;text-align:right;">${d.affiliateListings}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 16px;font-size:13px;color:#71717a;">Next run in</td>
+          <td style="padding:8px 16px;font-size:14px;font-weight:700;color:#09090b;text-align:right;">${d.intervalHours} hours</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 16px;font-size:13px;color:#71717a;">Status</td>
+          <td style="padding:8px 16px;text-align:right;">${badge('✓ Healthy', '#16a34a')}</td>
+        </tr>
+      </table>
+
+      ${divider()}
+      <p style="margin:0;font-size:12px;color:#a1a1aa;text-align:center;">
+        This report is sent automatically every ${d.intervalHours} hours by ScootMart.ae cron.<br/>
+        <a href="${APP_URL}/admin" style="color:#a1a1aa;">Admin Panel</a> &nbsp;·&nbsp;
+        <a href="${APP_URL}/browse" style="color:#a1a1aa;">Browse Listings</a>
+      </p>
+    `),
+  })
+}
