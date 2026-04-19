@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { MinimalNav } from '@/components/shop/MinimalNav'
 import { SiteFooter } from '@/components/shop/SiteFooter'
-import { ProductImage } from '@/components/listings/ProductImage'
+import { ImageGallery } from '@/components/listings/ImageGallery'
 import { ListingBuyPanel } from '@/components/listings/ListingBuyPanel'
 import { Shield, ArrowLeft, BarChart3 } from 'lucide-react'
 import type { Listing } from '@/types/database'
@@ -90,31 +90,13 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
         <div className="grid lg:grid-cols-5 gap-10">
           {/* LEFT: image + specs */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Main image */}
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-100">
-              <ProductImage src={listing.images?.[0]} alt={listing.title} />
-              {discount > 5 && (
-                <span className="absolute top-3 right-3 text-xs font-bold bg-red-500 text-white px-2.5 py-1 rounded-full">
-                  -{discount}%
-                </span>
-              )}
-              {listing.rta_compliant && (
-                <span className="absolute bottom-3 left-3 text-xs font-semibold bg-green-500 text-white px-2.5 py-1 rounded-full">
-                  ✓ RTA Compliant
-                </span>
-              )}
-            </div>
-
-            {/* Thumbnail strip */}
-            {listing.images && listing.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
-                {listing.images.slice(1, 5).map((img, i) => (
-                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-neutral-100">
-                    <ProductImage src={img} alt={`${listing.title} ${i + 2}`} />
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Image gallery with swipe */}
+            <ImageGallery
+              images={listing.images ?? []}
+              alt={listing.title}
+              discount={discount > 5 ? discount : undefined}
+              rtaCompliant={listing.rta_compliant}
+            />
 
             {/* Title */}
             <div>
