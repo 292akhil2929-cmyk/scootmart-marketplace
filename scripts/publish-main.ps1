@@ -1,0 +1,1 @@
+param([string]$work="work",[string]$main="main"); git checkout $work; git add .; git commit -m "sync"; git checkout $main; git pull origin $main; git merge $work; git push origin $main; git checkout $work; Write-Host "Done!" -Fore Green
