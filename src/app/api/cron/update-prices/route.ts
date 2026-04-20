@@ -74,17 +74,34 @@ export async function GET(req: NextRequest) {
   }
 
   // ── 2. Gather listing stats ─────────────────────────────────────────────────
-  const { data: allListings } = await supabase
+  // Total count (separate query — no row limit)
+  const { count: totalListingsCount } = await supabase
     .from('listings')
-    .select('id,title,view_count,is_affiliate')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'active')
+
+  const { count: affiliateCount } = await supabase
+    .from('listings')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'active')
+    .eq('is_affiliate', true)
+
+  const { data: topViewData } = await supabase
+    .from('listings')
+    .select('id,title,view_count')
     .eq('status', 'active')
     .order('view_count', { ascending: false })
     .limit(10)
 
-  const totalListings     = allListings?.length ?? 0
-  const affiliateListings = allListings?.filter((l: any) => l.is_affiliate).length ?? 0
-  const totalViews        = allListings?.reduce((s: number, l: any) => s + (l.view_count ?? 0), 0) ?? 0
-  const topViewedListings = (allListings ?? []).slice(0, 5).map((l: any) => ({
+  const { data: viewSumData } = await supabase
+    .from('listings')
+    .select('view_count')
+    .eq('status', 'active')
+
+  const totalListings     = totalListingsCount ?? 0
+  const affiliateListings = affiliateCount ?? 0
+  const totalViews        = (viewSumData ?? []).reduce((s: number, l: any) => s + (l.view_count ?? 0), 0)
+  const topViewedListings = (topViewData ?? []).slice(0, 5).map((l: any) => ({
     title: l.title,
     views: l.view_count ?? 0,
   }))
@@ -150,25 +167,38 @@ export async function GET(req: NextRequest) {
   }
 
   // ── 4. Send report email ────────────────────────────────────────────────────
-  await sendCronReport({
-    runAt,
-    intervalHours: INTERVAL_H,
-    totalListings,
-    activeListings: totalListings,
-    affiliateListings,
-    updatedThisRun: updated,
-    totalClicksPeriod,
-    clicksByPlatform,
-    topListings,
-    totalViews,
-    topViewedListings,
-  }).catch(err => console.error('[Cron] Email failed:', err))
+  let emailSent = false
+  let emailError = ''
+  try {
+    await sendCronReport({
+      runAt,
+      intervalHours: INTERVAL_H,
+      totalListings,
+      activeListings: totalListings,
+      affiliateListings,
+      updatedThisRun: updated,
+      totalClicksPeriod,
+      clicksByPlatform,
+      topListings,
+      totalViews,
+      topViewedListings,
+    })
+    emailSent = true
+    console.log('[Cron] Report email sent to', ADMIN_EMAIL)
+  } catch (err: any) {
+    emailError = err?.message ?? String(err)
+    console.error('[Cron] Email failed:', emailError)
+  }
 
   return NextResponse.json({
     ok: true,
     total: listings?.length ?? 0,
     updated,
     totalClicksPeriod,
+    totalListings,
+    affiliateListings,
+    emailSent,
+    emailError: emailError || undefined,
     ts: runAt,
   })
 }

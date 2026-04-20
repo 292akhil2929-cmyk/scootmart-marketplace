@@ -1,9 +1,15 @@
-// Email sending via Resend
-// Docs: https://resend.com/docs
+// Email sending — Resend (primary) with Gmail SMTP fallback
+// Resend works once scootmart.ae domain is verified at resend.com/domains
+// Gmail fallback works immediately — set GMAIL_APP_PASSWORD in Vercel env
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY
-const FROM = process.env.EMAIL_FROM ?? 'ScootMart.ae <noreply@scootmart.ae>'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://scootmart-marketplace.vercel.app'
+import nodemailer from 'nodemailer'
+
+const RESEND_API_KEY    = process.env.RESEND_API_KEY
+const GMAIL_USER        = process.env.GMAIL_USER        ?? 'scootmartae@gmail.com'
+const GMAIL_APP_PASS    = process.env.GMAIL_APP_PASSWORD               // 16-char Google App Password
+const FROM_RESEND       = process.env.EMAIL_FROM        ?? 'ScootMart.ae <noreply@scootmart.ae>'
+const FROM_GMAIL        = `ScootMart.ae <${GMAIL_USER}>`
+const APP_URL           = process.env.NEXT_PUBLIC_APP_URL ?? 'https://scootmart.ae'
 
 interface EmailPayload {
   to: string
@@ -75,20 +81,56 @@ function badge(text: string, color = '#000') {
 }
 
 // ── Send helper ───────────────────────────────────────────────────────────────
-async function sendEmail(payload: EmailPayload) {
-  if (!RESEND_API_KEY) {
-    console.warn('[Email] RESEND_API_KEY not set – skipping email:', payload.subject)
-    return
-  }
+async function sendViaGmail(payload: EmailPayload) {
+  if (!GMAIL_APP_PASS) throw new Error('GMAIL_APP_PASSWORD not set')
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASS },
+  })
+  await transporter.sendMail({
+    from: FROM_GMAIL,
+    to: payload.to,
+    subject: payload.subject,
+    html: payload.html,
+  })
+  console.log('[Email] Sent via Gmail SMTP to', payload.to)
+}
+
+async function sendViaResend(payload: EmailPayload) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: FROM, ...payload }),
+    body: JSON.stringify({ from: FROM_RESEND, ...payload }),
   })
   if (!res.ok) {
     const err = await res.text()
-    console.error('[Email] Failed to send:', err)
+    throw new Error(`Resend API error: ${err}`)
   }
+  console.log('[Email] Sent via Resend to', payload.to)
+}
+
+async function sendEmail(payload: EmailPayload) {
+  // 1. Try Gmail SMTP first (works without domain verification)
+  if (GMAIL_APP_PASS) {
+    try {
+      await sendViaGmail(payload)
+      return
+    } catch (err) {
+      console.error('[Email] Gmail SMTP failed:', err)
+    }
+  }
+
+  // 2. Fall back to Resend (requires scootmart.ae domain verified at resend.com/domains)
+  if (RESEND_API_KEY) {
+    try {
+      await sendViaResend(payload)
+      return
+    } catch (err) {
+      console.error('[Email] Resend failed:', err)
+    }
+  }
+
+  console.warn('[Email] No working email provider — set GMAIL_APP_PASSWORD in Vercel env vars')
 }
 
 // ── Templates ─────────────────────────────────────────────────────────────────
