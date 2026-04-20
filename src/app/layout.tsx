@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import Script from 'next/script'
 import './globals.css'
 import { ScrollRevealInit } from '@/components/layout/ScrollRevealInit'
 import { Toaster } from '@/components/ui/toaster'
@@ -34,17 +33,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* AdSense ownership verification — must be in <head> for Google's crawler */}
+        {/* AdSense verification + script — must be in <head> for Google's crawler */}
         <meta name="google-adsense-account" content={ADSENSE_ID} />
-      </head>
-      <body className={inter.className}>
-        {/* Google AdSense script — afterInteractive so it never blocks page render */}
-        <Script
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`}
           crossOrigin="anonymous"
-          strategy="afterInteractive"
         />
+      </head>
+      <body className={inter.className}>
         <GoogleAnalytics />
         <Providers>
           <ScrollRevealInit />
