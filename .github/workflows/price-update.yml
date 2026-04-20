@@ -1,15 +1,98 @@
-name: UAE E-Scooter PriceUpdate
+name: ScootMart Price Scraper
 
 on:
+  # Run every 6 hours (minute 0, hours 0/6/12/18 UTC = 4/10/16/22 UAE time)
   schedule:
     - cron: '0 */6 * * *'
+  # Allow manual triggering from the Actions tab
   workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable verbose debug logging'
+        required: false
+        default: 'false'
+
+# Prevent overlapping runs → avoids Supabase write conflicts
+concurrency:
+  group: scootmart-scraper
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  update-prices:
+  scrape:
+    name: Scrape Amazon.ae & Noon → Supabase
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
+
+    env:
+      NODE_ENV: production
+      TZ: Asia/Dubai
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
+      DEBUG_SCRAPER: ${{ github.event.inputs.debug || 'false' }}
+
     steps:
-      - name: Call cron endpoint
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Verify required secrets exist
         run: |
-          curl -s -X GET -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.VERCEL_APP_URL }}/api/cron/update-prices"
+          missing=0
+          if [ -z "$SUPABASE_URL" ];              then echo "::error::SUPABASE_URL is not set";              missing=1; fi
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then echo "::error::SUPABASE_SERVICE_ROLE_KEY is not set"; missing=1; fi
+          if [ "$missing" -eq 1 ]; then exit 1; fi
+          echo "✅ All required secrets are present."
+          if [ -z "$SCRAPER_API_KEY" ]; then
+            echo "::warning::SCRAPER_API_KEY not set — direct fetch used (lower Amazon success rate)"
+            echo "Free signup: https://www.scraperapi.com — 1,000 requests/month"
+          else
+            echo "✅ ScraperAPI key detected — proxied requests enabled"
+          fi
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Run price scraper
+        id: run_scraper
+        run: node scripts/scraper.mjs
+
+      - name: Notify cron endpoint (send email report)
+        if: success()
+        env:
+          VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -n "$VERCEL_APP_URL" ] && [ -n "$CRON_SECRET" ]; then
+            echo "📧 Triggering email report..."
+            curl -sf -X GET \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$VERCEL_APP_URL/api/cron/update-prices" \
+              -o /tmp/cron_response.json && cat /tmp/cron_response.json || true
+          else
+            echo "⏭️  Skipping email report (VERCEL_APP_URL or CRON_SECRET not set)"
+          fi
+
+      - name: Log failure details
+        if: failure()
+        run: |
+          echo "::error title=Scraper Failed::Price scraper failed — check logs above"
+          echo "Run: #${{ github.run_number }} | Trigger: ${{ github.event_name }}"
+
+      - name: Success summary
+        if: success()
+        run: |
+          echo "### ✅ ScootMart price scraper completed" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Run | #${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Time (UAE) | $(TZ=Asia/Dubai date) |" >> $GITHUB_STEP_SUMMARY

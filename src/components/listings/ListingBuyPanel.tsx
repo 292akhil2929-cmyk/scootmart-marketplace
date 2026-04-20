@@ -46,6 +46,19 @@ interface PriceSource {
   label: string
   price: number
   url: string
+  price_scraped_at?: string
+}
+
+function timeAgo(iso?: string): string | null {
+  if (!iso) return null
+  const diffMs = Date.now() - new Date(iso).getTime()
+  if (diffMs < 0) return null
+  const mins = Math.floor(diffMs / 60_000)
+  if (mins < 2)  return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24)  return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
 }
 
 export function ListingBuyPanel({
@@ -183,7 +196,22 @@ export function ListingBuyPanel({
       <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden shadow-sm">
         <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
           <h2 className="text-sm font-bold">Compare Prices</h2>
-          <span className="text-xs text-neutral-400">{sortedSources.length} store{sortedSources.length !== 1 ? 's' : ''}</span>
+          <div className="flex items-center gap-3">
+            {(() => {
+              const freshest = sortedSources
+                .map(s => s.price_scraped_at)
+                .filter(Boolean)
+                .sort()
+                .at(-1)
+              const ago = timeAgo(freshest)
+              return ago ? (
+                <span className="text-[10px] text-green-600 font-medium bg-green-50 border border-green-100 px-2 py-0.5 rounded-full">
+                  ↻ checked {ago}
+                </span>
+              ) : null
+            })()}
+            <span className="text-xs text-neutral-400">{sortedSources.length} store{sortedSources.length !== 1 ? 's' : ''}</span>
+          </div>
         </div>
 
         {sortedSources.length > 0 ? (

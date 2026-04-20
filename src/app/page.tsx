@@ -6,6 +6,7 @@ import { HeroEcom } from '@/components/shop/HeroEcom'
 import { FeatureStrip } from '@/components/shop/FeatureStrip'
 import { ProductGrid } from '@/components/shop/ProductGrid'
 import { SiteFooter } from '@/components/shop/SiteFooter'
+import { SafetyGearStrip } from '@/components/shop/SafetyGearStrip'
 import type { Listing } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -38,6 +39,7 @@ export default async function Page() {
       <HeroEcom />
       <FeatureStrip />
       <ProductGrid listings={listings} />
+      <SafetyGearStrip />
       <SiteFooter />
     </main>
   )
