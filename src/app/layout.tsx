@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_AE',
-    url: 'https://scootmart.ae',
+    url: process.env.NEXT_PUBLIC_APP_URL ?? 'https://scootmart-marketplace.vercel.app',
     siteName: 'ScootMart.ae',
     title: 'ScootMart.ae – UAE Electric Scooter & E-Bike Marketplace',
     description: 'Verified sellers, escrow protection, UAE-tested performance data.',

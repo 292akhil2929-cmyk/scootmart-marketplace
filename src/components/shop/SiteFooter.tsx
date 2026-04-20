@@ -55,7 +55,7 @@ export function SiteFooter() {
                 scootmartae@gmail.com
               </a>
               <a
-                href="https://scootmart.ae"
+                href="https://scootmart-marketplace.vercel.app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors group"
@@ -114,7 +114,7 @@ export function SiteFooter() {
               scootmartae@gmail.com
             </a>
             <span className="text-neutral-200">·</span>
-            <a href="https://scootmart.ae" target="_blank" rel="noopener noreferrer" className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors">
+            <a href="https://scootmart-marketplace.vercel.app" target="_blank" rel="noopener noreferrer" className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors">
               scootmart.ae
             </a>
           </div>

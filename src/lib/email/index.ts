@@ -9,7 +9,7 @@ const GMAIL_USER        = process.env.GMAIL_USER        ?? 'scootmartae@gmail.co
 const GMAIL_APP_PASS    = process.env.GMAIL_APP_PASSWORD               // 16-char Google App Password
 const FROM_RESEND       = process.env.EMAIL_FROM        ?? 'ScootMart.ae <noreply@scootmart.ae>'
 const FROM_GMAIL        = `ScootMart.ae <${GMAIL_USER}>`
-const APP_URL           = process.env.NEXT_PUBLIC_APP_URL ?? 'https://scootmart.ae'
+const APP_URL           = process.env.NEXT_PUBLIC_APP_URL ?? 'https://scootmart-marketplace.vercel.app'
 
 interface EmailPayload {
   to: string
