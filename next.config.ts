@@ -14,7 +14,7 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['pg'],
+  serverExternalPackages: ['pg', 'nodemailer'],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**" },

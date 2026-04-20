@@ -28,17 +28,17 @@ export const metadata: Metadata = {
   },
   twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
-  // AdSense account verification meta tag
-  other: {
-    'google-adsense-account': ADSENSE_ID,
-  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* AdSense ownership verification — must be in <head> for Google's crawler */}
+        <meta name="google-adsense-account" content={ADSENSE_ID} />
+      </head>
       <body className={inter.className}>
-        {/* Google AdSense — loads after page is interactive so it never blocks render */}
+        {/* Google AdSense script — afterInteractive so it never blocks page render */}
         <Script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`}
