@@ -2,7 +2,8 @@
 // Resend works once scootmart.ae domain is verified at resend.com/domains
 // Gmail fallback works immediately — set GMAIL_APP_PASSWORD in Vercel env
 
-import nodemailer from 'nodemailer'
+// NOTE: nodemailer is required dynamically inside sendViaGmail() so Next.js
+// never tries to bundle it at build time (it's a Node.js-only package).
 
 const RESEND_API_KEY    = process.env.RESEND_API_KEY
 const GMAIL_USER        = process.env.GMAIL_USER        ?? 'scootmartae@gmail.com'
@@ -83,6 +84,8 @@ function badge(text: string, color = '#000') {
 // ── Send helper ───────────────────────────────────────────────────────────────
 async function sendViaGmail(payload: EmailPayload) {
   if (!GMAIL_APP_PASS) throw new Error('GMAIL_APP_PASSWORD not set')
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const nodemailer = require('nodemailer') as typeof import('nodemailer')
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: { user: GMAIL_USER, pass: GMAIL_APP_PASS },
