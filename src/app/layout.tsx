@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 import { ScrollRevealInit } from '@/components/layout/ScrollRevealInit'
 import { Toaster } from '@/components/ui/toaster'
@@ -11,9 +12,11 @@ import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics'
 
 const inter = Inter({ subsets: ['latin'] })
 
+const ADSENSE_ID = 'ca-pub-7981331825961236'
+
 export const metadata: Metadata = {
   title: { default: 'ScootMart.ae – UAE Electric Scooter & E-Bike Marketplace', template: '%s | ScootMart.ae' },
-  description: 'UAE\'s #1 marketplace for new and certified used electric scooters and e-bikes. Verified sellers, escrow protection, UAE-tested reviews, and certified used program.',
+  description: "UAE's #1 marketplace for new and certified used electric scooters and e-bikes. Verified sellers, escrow protection, UAE-tested reviews, and certified used program.",
   keywords: ['electric scooter UAE', 'e-bike Dubai', 'buy scooter Dubai', 'Segway UAE', 'NIU scooter Abu Dhabi', 'certified used scooter UAE'],
   openGraph: {
     type: 'website',
@@ -25,12 +28,23 @@ export const metadata: Metadata = {
   },
   twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
+  // AdSense account verification meta tag
+  other: {
+    'google-adsense-account': ADSENSE_ID,
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        {/* Google AdSense — loads after page is interactive so it never blocks render */}
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <GoogleAnalytics />
         <Providers>
           <ScrollRevealInit />
